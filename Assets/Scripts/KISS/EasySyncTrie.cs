@@ -3,8 +3,9 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
-namespace DefaultNamespace
+namespace KISS
 {
     public class EasySyncTrie
     {
@@ -81,6 +82,7 @@ namespace DefaultNamespace
             foreach (string line in lines)
             {
                 int colonIndex = line.IndexOf(':');
+                Debug.Assert(colonIndex > 0, line);
                 string node = line.Substring(0, colonIndex);
                 string opAndVal = line.Substring(colonIndex + 1);
                 
@@ -101,11 +103,17 @@ namespace DefaultNamespace
             {
                 foreach (var (node, op) in syncNodes)
                 {
+                    Debug.Log((node, op, GetNodeValString(node)));
                     if (_listeners.TryGetValue(node, out var listener))
                     {
                         listener?.Invoke(op);
                     }
                 }
+            }
+            
+            foreach (var (node, op) in syncNodes)
+            {
+                Debug.Log((node, op, GetNodeValString(node)));
             }
         }
 
@@ -144,5 +152,7 @@ namespace DefaultNamespace
             }
             return float.Parse(str);
         }
+        
+        
     }
 }

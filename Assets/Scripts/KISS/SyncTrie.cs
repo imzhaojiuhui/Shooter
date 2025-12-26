@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
-namespace DefaultNamespace
+namespace KISS
 {
     public class SyncTrie
     {
