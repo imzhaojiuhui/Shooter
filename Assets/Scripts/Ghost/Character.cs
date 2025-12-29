@@ -21,7 +21,9 @@ namespace Ghost
 
         private void Update()
         {
-            
+            var cPos = transform.position;
+            cPos.z = Camera.main.transform.position.z;
+            Camera.main.transform.position = cPos;
         }
 
         private void OnMove(Vector2 dir)

@@ -21,6 +21,34 @@ public class MJoyStick : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        bool w =Input.GetKey(KeyCode.W);
+        bool a =Input.GetKey(KeyCode.A);
+        bool d =Input.GetKey(KeyCode.D);
+        bool s = Input.GetKey(KeyCode.S);
+        var moveK = Vector2.zero;
+        if (w)
+        {
+            moveK += Vector2.up;
+        }
+        if (a)
+        {
+            moveK += Vector2.left;
+        }
+        if (d)
+        {
+            moveK += Vector2.right;
+        }
+        if (s)
+        {
+            moveK += Vector2.down;
+        }
+
+        if (moveK != Vector2.zero)
+        {
+            OnMove?.Invoke(moveK);
+            return;
+        }
+
         if (Input.GetMouseButtonDown(0))
         {
             var uiPos = ScreenToRectTransformPos(Input.mousePosition, _rectTransform);
