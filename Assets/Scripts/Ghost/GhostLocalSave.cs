@@ -10,6 +10,16 @@ namespace Ghost
     {
         public float[] start;
         public float[] end;
+        
+        // public bool Horizontal => Mathf.Abs(start[0] - end[0]) < float.Epsilon;
+        public bool Horizontal
+        {
+            get
+            {
+                var dir = end.ToVector2() - start.ToVector2();
+                return Mathf.Abs(dir.x) > Mathf.Abs(dir.y);
+            }
+        }
     }
 
     [DisallowMultipleComponent]

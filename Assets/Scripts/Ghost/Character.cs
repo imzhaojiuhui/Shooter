@@ -26,7 +26,7 @@ namespace Ghost
 
         private void OnMove(Vector2 dir)
         {
-            _groundMovement.Velocity = dir;
+            _groundMovement.InputVelocity = dir;
         }
     }
 }

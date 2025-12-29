@@ -42,12 +42,23 @@ public class MJoyStick : MonoBehaviour
             var dir = uiPos / (_bg.rect.width * .5f);
             _tmp.text = dir.ToString();
 
-            if (dir.magnitude > .1)
+            if (dir.sqrMagnitude > .1)
             {
-                bool horizontal = Mathf.Abs(dir.x) >  Mathf.Abs(dir.y);
-                var mag = Math.Sign(horizontal ? dir.x : dir.y);
-                
-                OnMove?.Invoke(horizontal ? new Vector2(mag, 0) : new Vector2(0, mag));
+                OnMove?.Invoke(dir);
+                // bool vertical = Mathf.Abs(dir.y) > .3f || dir.y > dir.x;
+                // bool horizontal = Mathf.Abs(dir.x) > .1f;
+                // var move = Vector2.zero;
+                // if (horizontal)
+                // {
+                //     move += Math.Sign(dir.x) * Vector2.right;
+                // }
+                //
+                // if (vertical)
+                // {
+                //     move += Math.Sign(dir.y) * Vector2.up;
+                // }
+                //
+                // OnMove?.Invoke(move);
             }
             else
             {
