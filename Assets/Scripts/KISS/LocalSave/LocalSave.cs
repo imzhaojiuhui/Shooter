@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 
 namespace KISS
@@ -54,15 +55,18 @@ namespace KISS
 
             return defaultValue;
         }
-
-        public T GetKeyData<T>(string key)
+        
+        public List<T> GetList<T>(string key)
         {
             if (_data.mSaveObject.TryGetValue(key, out var value))
             {
-                return value.Value<T>();
+                var jArray = value as JArray;
+                if (jArray != null)
+                    return jArray.ToObject<List<T>>();
+                // return value.Value<T>();
             }
 
-            return default;
+            return null;
         }
 
         private bool _isDirty;

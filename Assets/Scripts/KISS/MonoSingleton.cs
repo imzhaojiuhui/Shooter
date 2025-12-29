@@ -21,7 +21,7 @@ namespace KISS
                         if (s_instance == null)
                         {
                             // 在场景中查找现有的实例
-                            s_instance = FindObjectOfType<T>();
+                            s_instance = FindObjectOfType<T>(true);
 
                             // 如果在场景中找不到实例，则创建一个新的实例并将其添加到游戏对象
                             if (s_instance == null)

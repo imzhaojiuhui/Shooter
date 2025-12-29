@@ -1,5 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using Ghost;
+using Ghost.UI;
+using KISS;
 
 /// <summary>
 /// Unity 纯2D正交场景 终极完整版
@@ -64,10 +67,37 @@ public class WorldLineDraw2D : MonoBehaviour
         // 创建画线预览线和删除轨迹预览线
         CreatePreviewLine();
         CreateDeletePreviewLine();
+        
+        // init data
+        var saveLines = GhostLocalSave.Instance.GetRoadLines();
+        if (saveLines != null)
+        {
+            foreach (var line in saveLines)
+            {
+                Create2DFinalLine(line.start.ToVector2(), line.end.ToVector2());
+            }
+        }
     }
 
     void Update()
     {
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            List<RoadLine> lines = new();
+            foreach (var line in all2DLineDatas)
+            {
+                lines.Add(new RoadLine()
+                {
+                    start = line.startPos.ToArray(),
+                    end = line.endPos.ToArray(),
+                });
+            }
+            GhostLocalSave.Instance.SaveRoadLines(lines);
+
+            Tips.Instance.Pop("saved").Forget();
+            return;
+        }
+        
         #region ★优先级最高：相机平移 (两种方式：Ctrl+左键 、 滚轮中键按下拖动)★
         if ( (Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButton(0)) || Input.GetMouseButton(2) )
         {

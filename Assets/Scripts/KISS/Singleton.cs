@@ -8,14 +8,19 @@
 /// <typeparam name="T">子类自身的类型</typeparam>
 public abstract class Singleton<T> where T : class, new()
 {
-    /// <summary>
-    /// 全局唯一实例（子类直接通过 子类名.Instance 访问）
-    /// </summary>
-    public static readonly T Instance = LazyInstance.Value;
+    private static T _instance;
 
-    /// <summary>
-    /// 静态懒加载对象，.NET原生线程安全，第一次访问Instance时才创建实例
-    /// LazyThreadSafetyMode.ExecutionAndPublication 保证实例只被创建一次
-    /// </summary>
-    private static readonly Lazy<T> LazyInstance = new Lazy<T>(() => new T());
+    public static T Instance
+    {
+        get
+        {
+            if (null == _instance)
+            {
+                _instance = new T();
+                // DebuggerLog.Assert(_instance != null);
+            }
+
+            return _instance;
+        }
+    }
 }
