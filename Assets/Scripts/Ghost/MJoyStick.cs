@@ -1,3 +1,5 @@
+using System;
+using KISS;
 using TMPro;
 using UnityEngine;
 
@@ -39,8 +41,26 @@ public class MJoyStick : MonoBehaviour
 
             var dir = uiPos / (_bg.rect.width * .5f);
             _tmp.text = dir.ToString();
+
+            if (dir.magnitude > .1)
+            {
+                bool horizontal = Mathf.Abs(dir.x) >  Mathf.Abs(dir.y);
+                var mag = Math.Sign(horizontal ? dir.x : dir.y);
+                
+                OnMove?.Invoke(horizontal ? new Vector2(mag, 0) : new Vector2(0, mag));
+            }
+            else
+            {
+                OnMove?.Invoke(Vector2.zero);
+            }
+        }
+        else
+        {
+            OnMove?.Invoke(Vector2.zero);
         }
     }
+
+    public static event Action<Vector2> OnMove; 
     
     /// <summary>
     /// 屏幕坐标 转 RectTransform 锚点坐标（核心方法）
