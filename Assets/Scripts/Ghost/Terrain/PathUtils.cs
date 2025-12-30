@@ -115,6 +115,7 @@ namespace Ghost.Terrain
             /// </summary>
             public WeightedGraphNode AddNode(Vector2 nodeWorldPos)
             {
+                ClearPathFindCache();
                 WeightedGraphNode newNode = new WeightedGraphNode(_nodeIdCounter, nodeWorldPos);
                 _nodesDict.Add(_nodeIdCounter, newNode);
                 _nodeIdCounter++;
@@ -130,6 +131,7 @@ namespace Ghost.Terrain
             /// <param name="weight">边的权重（你的场景=两点间线段距离）</param>
             public void AddWeightedEdge(WeightedGraphNode nodeA, WeightedGraphNode nodeB, float weight)
             {
+                ClearPathFindCache();
                 if (nodeA == null || nodeB == null) return;
                 if (weight < 0) weight = 0; // 权重不能为负（距离/代价不可能为负）
                 nodeA.AddAdjacentEdge(nodeB.NodeId, weight);
@@ -183,42 +185,134 @@ namespace Ghost.Terrain
             /// </summary>
             public void ClearGraph()
             {
+                ClearPathFindCache();
                 _nodesDict.Clear();
                 _nodeIdCounter = 0;
             }
-        }
 
-        /// <summary>
-        /// 适配「带权重无向图」的Dijkstra单源最短路径算法
-        /// ✅ 无缝对接上面的图结构，一行调用，返回路径点
-        /// </summary>
-        public static class DijkstraPathfinder
-        {
+            #region 寻路cache
+
+            /// <summary>
+            /// 单条路径的缓存项 - 存储：路径点集合 + 路径总权重
+            /// </summary>
+            private class PathCacheItem
+            {
+                // 从起点到该终点的最短路径点（WorldPos，顺序：起点→终点）
+                public List<int> PathNodeIds { get; set; }
+
+                // 该路径的总权重（所有边的权重之和）
+                public float TotalWeight { get; set; }
+
+                public PathCacheItem(List<int> nodeIds, float weight)
+                {
+                    PathNodeIds = nodeIds;
+                    TotalWeight = weight;
+                }
+
+                public IEnumerable<int> ReversePathNodeIds()
+                {
+                    for (int i = PathNodeIds.Count - 1; i >= 0; i--)
+                    {
+                        yield return PathNodeIds[i];
+                    }
+                }
+            }
+
+            private Dictionary<(int, int), PathCacheItem> _pathFindCache = new();
+
+            private PathCacheItem GetPathFindCache(int startNodeId, int endNodeId)
+            {
+                if (_pathFindCache.ContainsKey((startNodeId, endNodeId)))
+                {
+                    return _pathFindCache[(startNodeId, endNodeId)];
+                }
+
+                return _pathFindCache.GetValueOrDefault((endNodeId, startNodeId));
+            }
+
+            private void ClearPathFindCache()
+            {
+                _pathFindCache.Clear();
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
+            /// <param name="startNode"></param>
+            /// <param name="endNode"></param>
+            /// <returns>最短路径的集合（起点→拐点→终点），无路径返回空列表</returns>
+            public IEnumerable<int> FindShortestPath(WeightedGraphNode startNode,
+                WeightedGraphNode endNode)
+            {
+                var cache = GetPathFindCache(startNode.NodeId, endNode.NodeId);
+                if (cache == null)
+                {
+                    // 没找到缓存
+                }
+                else if (cache.PathNodeIds[0] == endNode.NodeId)
+                {
+                    return cache.ReversePathNodeIds();
+                }
+                else
+                {
+                    return cache.PathNodeIds;
+                }
+
+                var (path, gCost) = FindShortestPathDijkstra(startNode, endNode);
+                // FindShortestPathDijkstra计算留下的GCost收集到缓存
+                foreach (var node in _nodesDict.Values)
+                {
+                    if (node.GCost == float.MaxValue) continue;
+                    List<int> nodePathIds = new List<int>();
+                    WeightedGraphNode tempNode = node;
+                    while (tempNode != null)
+                    {
+                        nodePathIds.Add(tempNode.NodeId); // 收集ID
+                        tempNode = tempNode.ParentNode;
+                    }
+
+                    nodePathIds.Reverse(); // 反转：终点ID→起点ID → 起点ID→终点ID
+                    _pathFindCache.Add((startNode.NodeId, node.NodeId),
+                        new PathCacheItem(nodePathIds, node.GCost)); //是否会重复add？
+                }
+
+                if (path.Count == 0)
+                {
+                    _pathFindCache.Add((startNode.NodeId, endNode.NodeId), new PathCacheItem(path, gCost));
+                }
+
+                return path;
+            }
+
+            #endregion
+
+            #region 寻路
+
             /// <summary>
             /// Dijkstra核心寻路方法
             /// </summary>
             /// <param name="graph">带权重无向图</param>
             /// <param name="startNode">起点节点</param>
             /// <param name="endNode">终点节点</param>
-            /// <returns>最短路径的世界坐标集合（起点→拐点→终点），无路径返回空列表</returns>
-            public static List<Vector2> FindShortestPath(WeightedUndirectedGraph graph, WeightedGraphNode startNode,
+            /// <returns>最短路径的集合（起点→拐点→终点），无路径返回空列表 最短距离</returns>
+            private (List<int>, float) FindShortestPathDijkstra(WeightedGraphNode startNode,
                 WeightedGraphNode endNode)
             {
-                List<Vector2> path = new List<Vector2>();
-                if (graph == null || startNode == null || endNode == null) return path;
+                List<int> path = new();
+                if (startNode == null || endNode == null) return (path, float.MaxValue);
                 if (startNode == endNode)
                 {
-                    path.Add(startNode.WorldPos);
-                    return path;
+                    path.Add(startNode.NodeId);
+                    return (path, float.MaxValue);
                 }
 
                 // 每次寻路前重置所有节点的寻路数据，关键！
-                graph.ResetPathfindingData();
+                ResetPathfindingData();
                 // 单源起点初始化：起点到自己的权重为0
                 startNode.GCost = 0;
 
                 // 获取图中所有节点，用于循环筛选
-                List<WeightedGraphNode> allNodes = graph.GetAllNodes();
+                List<WeightedGraphNode> allNodes = GetAllNodes();
 
                 while (true)
                 {
@@ -236,7 +330,7 @@ namespace Ghost.Terrain
                     // 步骤2：遍历当前节点的所有邻接边，更新邻居节点的GCost
                     foreach (var edge in currentNode.AdjacentEdges)
                     {
-                        WeightedGraphNode neighborNode = graph.GetNodeById(edge.targetNodeId);
+                        WeightedGraphNode neighborNode = GetNodeById(edge.targetNodeId);
                         if (neighborNode == null || neighborNode.IsVisited || neighborNode.IsObstacle) continue;
 
                         // 新权重 = 起点到当前节点的权重 + 当前节点到邻居的权重
@@ -254,19 +348,21 @@ namespace Ghost.Terrain
                 if (endNode.GCost == float.MaxValue)
                 {
                     Debug.LogWarning("Dijkstra寻路失败：无可行路径！");
-                    return path;
+                    return (path, float.MaxValue);
                 }
 
                 WeightedGraphNode tempNode = endNode;
                 while (tempNode != null)
                 {
-                    path.Add(tempNode.WorldPos);
+                    path.Add(tempNode.NodeId);
                     tempNode = tempNode.ParentNode;
                 }
 
                 path.Reverse(); // 反转：终点→起点 → 起点→终点
-                return path;
+                return (path, endNode.GCost);
             }
+
+            #endregion
         }
     }
 }
