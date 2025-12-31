@@ -5,29 +5,25 @@ using UnityEngine;
 
 namespace Ghost
 {
-    public class GroundMovement:MonoBehaviour
+    public class GroundMovement : MonoBehaviour
     {
         public float baseSpeed = 3;
-        [Header("登梯/下梯 距离小于这个值直接跳过去")]
-        public  float turnDistance = .4f;
-        [Header("登梯子防抖")]
-        public  float turnDelaySeconds = 0.2f;
-        [Header("忽略roadLine毛刺")]
-        public float burrTrimLen = .5f; //修剪roadLine毛刺
-        [Header("小于这个距离时 倾向于转角处")]
-        public float inclineDistance = 1f;
-        
-        public Vector2 InputVelocity {get; set; }
-        public float Speed {
-            get
-            {
-                return baseSpeed;
-            }
+        [Header("登梯/下梯 距离小于这个值直接跳过去")] public float turnDistance = .4f;
+        [Header("登梯子防抖")] public float turnDelaySeconds = 0.2f;
+        [Header("忽略roadLine毛刺")] public float burrTrimLen = .5f; //修剪roadLine毛刺
+        [Header("小于这个距离时 倾向于转角处")] public float inclineDistance = 1f;
+
+        public Vector2 InputVelocity { get; set; }
+
+        public float Speed
+        {
+            get { return baseSpeed; }
         }
-        
+
 
         private float _turnSeconds;
         private bool _preFrameMoveHorizontal; // 当前是水平移动还是竖直移动
+
         private void Update() // 距离转角进时 倾向于转角处
         {
             #region 处理输入方向
@@ -35,23 +31,23 @@ namespace Ghost
             var input = InputVelocity;
             var absX = Mathf.Abs(input.x);
             var absY = Mathf.Abs(input.y);
-            bool moveV = absY > float.Epsilon && 
+            bool moveV = absY > float.Epsilon &&
                          (absY > absX || !_preFrameMoveHorizontal); //防止抖动登上梯子
-            bool moveH = absX > float.Epsilon && 
-                         (absY < absX || _preFrameMoveHorizontal); 
+            bool moveH = absX > float.Epsilon &&
+                         (absY < absX || _preFrameMoveHorizontal);
             var velocity = Vector2.zero;
             if (moveH)
             {
                 velocity += Math.Sign(input.x) * Vector2.right;
             }
-            
+
             if (moveV)
             {
                 velocity += Math.Sign(input.y) * Vector2.up;
             }
 
             #endregion
-            
+
             bool canTurn = false;
             foreach (var line in RoadMap.Instance.RoadLines)
             {
@@ -59,6 +55,7 @@ namespace Ghost
                 {
                     continue;
                 }
+
                 var (canTurn_, _, dis) = CanTurn(transform.position,
                     velocity,
                     line.start.ToVector2(), line.end.ToVector2());
@@ -68,10 +65,10 @@ namespace Ghost
                     break;
                 }
             }
-            
+
             // transform.Translate(Velocity*Speed*Time.deltaTime);
-            var toPos = transform.position + (Vector3)velocity*Speed*Time.deltaTime;
-            if (velocity ==  Vector2.zero)
+            var toPos = transform.position + (Vector3)velocity * Speed * Time.deltaTime;
+            if (velocity == Vector2.zero)
             {
                 _turnSeconds += Time.deltaTime;
             }
@@ -90,24 +87,24 @@ namespace Ghost
                 {
                     _turnSeconds = 0;
                 }
+
                 bool turnTimeFull = _turnSeconds > turnDelaySeconds;
 
                 float minDistance = float.MaxValue;
                 Vector2 closest = toPos;
                 foreach (var line in RoadMap.Instance.RoadLines)
                 {
-                    var dis = MathUtils.PointToLineSegmentDistance(toPos, 
-                        line.start.ToVector2(),  line.end.ToVector2(),  out var curClosest);
+                    var dis = MathTool.PointToLineSegmentDistance(toPos,
+                        line.start.ToVector2(), line.end.ToVector2(), out var curClosest);
                     // if (dis < float.Epsilon)
                     // {
                     //     break;
                     // }
-                    
+
                     #region 登梯/下楼梯
 
                     if (!turnTimeFull || !canTurn)
                     {
-                        
                     }
                     else if (moveH && !_preFrameMoveHorizontal && line.Horizontal)
                     {
@@ -117,9 +114,9 @@ namespace Ghost
                     {
                         dis -= turnDistance;
                     }
-                    
+
                     #endregion
-                    
+
                     if (dis < minDistance)
                     {
                         minDistance = dis;
@@ -127,6 +124,7 @@ namespace Ghost
                         _preFrameMoveHorizontal = line.Horizontal;
                     }
                 }
+
                 transform.position = closest;
             }
         }
@@ -172,7 +170,7 @@ namespace Ghost
                 canTurn = false;
             }
             // 还要要求移动到toPos方向上roadLine超过一定长度
-            else if(dot > 0) // 同向
+            else if (dot > 0) // 同向
             {
                 var forwardDis = (1 - t) * lineVec.magnitude;
                 canTurn = forwardDis > burrTrimLen;

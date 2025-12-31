@@ -1,19 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using KISS;
 using UnityEngine;
 
 namespace Ghost.Terrain
 {
+    public class CrossLine
+    {
+        public Vector2 Start;
+        private float _end;
+        public bool Horizontal;
+        public Vector2 End => Horizontal ? new Vector2(_end, Start.y) : new Vector2(Start.x, _end);
+    }
+
     public static class PathUtils
     {
-        public class HLine
-        {
-            public Vector2 Start;
-            private float _end;
-            public bool Horizontal;
-            public Vector2 End => Horizontal ? new Vector2(_end, Start.y) : new Vector2(Start.x, _end);
-        }
-
         /// <summary>
         /// 带权重的边 - 无向图专用
         /// 存储：目标节点 + 当前节点到目标节点的权重
@@ -92,6 +93,40 @@ namespace Ghost.Terrain
         }
 
         /// <summary>
+        /// 寻路图线段 用于角色移动
+        /// </summary>
+        // public class WeightedGraphEdge
+        // {
+        //     public WeightedGraphNode NodeA;
+        //     public WeightedGraphNode NodeB;
+        //     
+        //     public bool Horizontal
+        //     {
+        //         get
+        //         {
+        //             var dir = NodeB.WorldPos - NodeA.WorldPos;
+        //             return Mathf.Abs(dir.x) > Mathf.Abs(dir.y);
+        //         }
+        //     }
+        //     
+        //     // public bool GetRealMoveDirection(WeightedGraphNode corner, Vector2 direction, out Vector2 realDir)
+        //     // {
+        //     //     foreach (var edge in corner.AdjacentEdges)
+        //     //     {
+        //     //         var target = GetNodeById(edge.targetNodeId);
+        //     //         var dir = target.WorldPos - corner.WorldPos;
+        //     //         if (MathUtils.IsAngleWithin45(dir, direction))
+        //     //         {
+        //     //             realDir = dir.normalized;
+        //     //             return true;
+        //     //         }
+        //     //     }
+        //     //     realDir = Vector2.zero;
+        //     //     return false;
+        //     // }
+        // }
+
+        /// <summary>
         /// 带权重的无向图 完整数据结构核心类
         /// ✅ 核心特性：1.自动维护双向边 2.节点唯一ID索引 3.封装所有图操作 4.无缝适配Dijkstra/A星
         /// ✅ 你的场景：线段交点=节点，线段=带权边，权重=线段距离
@@ -129,7 +164,7 @@ namespace Ghost.Terrain
             /// <param name="nodeA">节点A</param>
             /// <param name="nodeB">节点B</param>
             /// <param name="weight">边的权重（你的场景=两点间线段距离）</param>
-            public void AddWeightedEdge(WeightedGraphNode nodeA, WeightedGraphNode nodeB, float weight)
+            private void AddWeightedEdge(WeightedGraphNode nodeA, WeightedGraphNode nodeB, float weight)
             {
                 ClearPathFindCache();
                 if (nodeA == null || nodeB == null) return;
@@ -138,9 +173,10 @@ namespace Ghost.Terrain
                 nodeB.AddAdjacentEdge(nodeA.NodeId, weight);
             }
 
-            public void AddWeightedEdge(WeightedGraphNode nodeA, WeightedGraphNode nodeB)
+            public void AddEdge(WeightedGraphNode nodeA, WeightedGraphNode nodeB)
             {
                 AddWeightedEdge(nodeA, nodeB, Vector2.Distance(nodeA.WorldPos, nodeB.WorldPos));
+                _edges.Add((nodeA, nodeB));
             }
 
             /// <summary>
@@ -155,6 +191,51 @@ namespace Ghost.Terrain
 
                 Debug.LogWarning($"图中不存在ID为{nodeId}的节点！");
                 return null;
+            }
+
+            public WeightedGraphNode GetNearestNode(Vector2 pos)
+            {
+                return _nodesDict.Values.OrderBy(n => Vector2.Distance(pos, n.WorldPos)).FirstOrDefault();
+            }
+
+            public WeightedGraphNode GetNearestNodeWithIn(Vector2 pos, float maxDistance)
+            {
+                var node = GetNearestNode(pos);
+                if (node == null) return null;
+                if (Vector2.Distance(pos, node.WorldPos) > maxDistance)
+                {
+                    return null;
+                }
+
+                return node;
+            }
+
+            /// <summary>
+            /// direction与其中一个邻接边形成45度以内夹角 则可以转向
+            /// </summary>
+            public bool CanGoInDirection(WeightedGraphNode corner, Vector2 curPos, Vector2 direction,
+                out WeightedGraphNode nextNode)
+            {
+                foreach (var edge in corner.AdjacentEdges)
+                {
+                    var target = GetNodeById(edge.targetNodeId);
+                    var dir = target.WorldPos - corner.WorldPos;
+                    if (MathTool.IsAngleWithin45(dir, direction))
+                    {
+                        if (MathTool.Cross(dir, direction) * MathTool.Cross(dir, curPos - corner.WorldPos) > 0)
+                        {
+                            // 角色位置和移动方向在corner同一侧 不转向
+                            continue;
+                        }
+
+                        nextNode = target;
+                        // realDir = dir.normalized;
+                        return true;
+                    }
+                }
+
+                nextNode = null;
+                return false;
             }
 
             /// <summary>
@@ -188,7 +269,42 @@ namespace Ghost.Terrain
                 ClearPathFindCache();
                 _nodesDict.Clear();
                 _nodeIdCounter = 0;
+                _edges.Clear();
             }
+
+            #region 线段
+
+            private List<(WeightedGraphNode, WeightedGraphNode)> _edges = new();
+
+            public (WeightedGraphNode, WeightedGraphNode, Vector2) GetNearestEdgePos(Vector2 point)
+            {
+                float minDistance = float.MaxValue;
+                Vector2 closest = Vector2.zero;
+                // (WeightedGraphNode, WeightedGraphNode) closestEdge = (null, null);
+                WeightedGraphNode closestEdgeFrom = null;
+                WeightedGraphNode closestEdgeTo = null;
+                foreach (var (from, to) in _edges)
+                {
+                    var dis = MathTool.PointToLineSegmentDistance(point,
+                        from.WorldPos, to.WorldPos, out var curClosest);
+                    if (dis < float.Epsilon)
+                    {
+                        return (from, to, curClosest);
+                    }
+
+                    if (dis < minDistance)
+                    {
+                        minDistance = dis;
+                        closestEdgeFrom = from;
+                        closestEdgeTo = to;
+                        closest = curClosest;
+                    }
+                }
+
+                return (closestEdgeFrom, closestEdgeTo, closest);
+            }
+
+            #endregion
 
             #region 寻路cache
 
@@ -248,6 +364,37 @@ namespace Ghost.Terrain
                 if (cache == null)
                 {
                     // 没找到缓存
+                    FindShortestPathDijkstraAll(startNode);
+                    // FindShortestPathDijkstra计算留下的GCost收集到缓存
+                    foreach (var node in _nodesDict.Values)
+                    {
+                        if (node.GCost == float.MaxValue) // 不连通
+                        {
+                            _pathFindCache.TryAdd((startNode.NodeId, node.NodeId),
+                                new PathCacheItem(new List<int>(), node.GCost));
+                            continue;
+                        }
+
+                        List<int> nodePathIds = new List<int>();
+                        WeightedGraphNode tempNode = node;
+                        while (tempNode != null)
+                        {
+                            nodePathIds.Add(tempNode.NodeId); // 收集ID
+                            tempNode = tempNode.ParentNode;
+                        }
+
+                        nodePathIds.Reverse(); // 反转：终点ID→起点ID → 起点ID→终点ID
+                        _pathFindCache.TryAdd((startNode.NodeId, node.NodeId),
+                            new PathCacheItem(nodePathIds, node.GCost)); //有可能会重复add
+                    }
+
+                    cache = GetPathFindCache(startNode.NodeId, endNode.NodeId);
+                }
+
+                if (cache.PathNodeIds.Count == 0)
+                {
+                    Debug.Log($"与node {endNode.WorldPos}不连通");
+                    return cache.PathNodeIds;
                 }
                 else if (cache.PathNodeIds[0] == endNode.NodeId)
                 {
@@ -258,30 +405,14 @@ namespace Ghost.Terrain
                     return cache.PathNodeIds;
                 }
 
-                var (path, gCost) = FindShortestPathDijkstra(startNode, endNode);
-                // FindShortestPathDijkstra计算留下的GCost收集到缓存
-                foreach (var node in _nodesDict.Values)
-                {
-                    if (node.GCost == float.MaxValue) continue;
-                    List<int> nodePathIds = new List<int>();
-                    WeightedGraphNode tempNode = node;
-                    while (tempNode != null)
-                    {
-                        nodePathIds.Add(tempNode.NodeId); // 收集ID
-                        tempNode = tempNode.ParentNode;
-                    }
 
-                    nodePathIds.Reverse(); // 反转：终点ID→起点ID → 起点ID→终点ID
-                    _pathFindCache.Add((startNode.NodeId, node.NodeId),
-                        new PathCacheItem(nodePathIds, node.GCost)); //是否会重复add？
-                }
+                //
+                // if (path.Count == 0)
+                // {
+                //     _pathFindCache.Add((startNode.NodeId, endNode.NodeId), new PathCacheItem(path, gCost));
+                // }
 
-                if (path.Count == 0)
-                {
-                    _pathFindCache.Add((startNode.NodeId, endNode.NodeId), new PathCacheItem(path, gCost));
-                }
-
-                return path;
+                // return _pathFindCache;
             }
 
             #endregion
@@ -295,16 +426,80 @@ namespace Ghost.Terrain
             /// <param name="startNode">起点节点</param>
             /// <param name="endNode">终点节点</param>
             /// <returns>最短路径的集合（起点→拐点→终点），无路径返回空列表 最短距离</returns>
-            private (List<int>, float) FindShortestPathDijkstra(WeightedGraphNode startNode,
-                WeightedGraphNode endNode)
+            // private (List<int>, float) FindShortestPathDijkstra(WeightedGraphNode startNode,
+            //     WeightedGraphNode endNode)
+            // {
+            //     List<int> path = new();
+            //     if (startNode == null || endNode == null) return (path, float.MaxValue);
+            //     if (startNode == endNode)
+            //     {
+            //         path.Add(startNode.NodeId);
+            //         return (path, float.MaxValue);
+            //     }
+            //
+            //     // 每次寻路前重置所有节点的寻路数据，关键！
+            //     ResetPathfindingData();
+            //     // 单源起点初始化：起点到自己的权重为0
+            //     startNode.GCost = 0;
+            //
+            //     // 获取图中所有节点，用于循环筛选
+            //     List<WeightedGraphNode> allNodes = GetAllNodes();
+            //
+            //     while (true)
+            //     {
+            //         // 步骤1：找到【未访问】且【GCost最小】的节点（Dijkstra核心，单源的体现）
+            //         WeightedGraphNode currentNode = allNodes
+            //             .Where(n => !n.IsVisited && n.GCost < float.MaxValue)
+            //             .OrderBy(n => n.GCost)
+            //             .FirstOrDefault();
+            //
+            //         if (currentNode == null) break; // 无路径，退出循环
+            //         if (currentNode == endNode) break; // 找到终点，退出循环
+            //
+            //         currentNode.IsVisited = true;
+            //
+            //         // 步骤2：遍历当前节点的所有邻接边，更新邻居节点的GCost
+            //         foreach (var edge in currentNode.AdjacentEdges)
+            //         {
+            //             WeightedGraphNode neighborNode = GetNodeById(edge.targetNodeId);
+            //             if (neighborNode == null || neighborNode.IsVisited || neighborNode.IsObstacle) continue;
+            //
+            //             // 新权重 = 起点到当前节点的权重 + 当前节点到邻居的权重
+            //             float newGCost = currentNode.GCost + edge.weight;
+            //             // 如果新权重更小，更新邻居的权重和父节点
+            //             if (newGCost < neighborNode.GCost)
+            //             {
+            //                 neighborNode.GCost = newGCost;
+            //                 neighborNode.ParentNode = currentNode;
+            //             }
+            //         }
+            //     }
+            //
+            //     // 步骤3：回溯父节点，生成路径
+            //     if (endNode.GCost == float.MaxValue)
+            //     {
+            //         Debug.LogWarning($"Dijkstra寻路失败：无可行路径！{endNode.WorldPos}");
+            //         return (path, float.MaxValue);
+            //     }
+            //
+            //     WeightedGraphNode tempNode = endNode;
+            //     while (tempNode != null)
+            //     {
+            //         path.Add(tempNode.NodeId);
+            //         tempNode = tempNode.ParentNode;
+            //     }
+            //
+            //     path.Reverse(); // 反转：终点→起点 → 起点→终点
+            //     return (path, endNode.GCost);
+            // }
+
+            /// <summary>
+            /// 计算startNode到所有节点的最短路径
+            /// </summary>
+            /// <param name="startNode"></param>
+            private void FindShortestPathDijkstraAll(WeightedGraphNode startNode)
             {
-                List<int> path = new();
-                if (startNode == null || endNode == null) return (path, float.MaxValue);
-                if (startNode == endNode)
-                {
-                    path.Add(startNode.NodeId);
-                    return (path, float.MaxValue);
-                }
+                if (startNode == null) return;
 
                 // 每次寻路前重置所有节点的寻路数据，关键！
                 ResetPathfindingData();
@@ -323,7 +518,7 @@ namespace Ghost.Terrain
                         .FirstOrDefault();
 
                     if (currentNode == null) break; // 无路径，退出循环
-                    if (currentNode == endNode) break; // 找到终点，退出循环
+                    // if (currentNode == endNode) break; // 找到终点，退出循环
 
                     currentNode.IsVisited = true;
 
@@ -345,21 +540,21 @@ namespace Ghost.Terrain
                 }
 
                 // 步骤3：回溯父节点，生成路径
-                if (endNode.GCost == float.MaxValue)
-                {
-                    Debug.LogWarning("Dijkstra寻路失败：无可行路径！");
-                    return (path, float.MaxValue);
-                }
+                // if (endNode.GCost == float.MaxValue)
+                // {
+                //     Debug.LogWarning($"Dijkstra寻路失败：无可行路径！{endNode.WorldPos}");
+                //     return (path, float.MaxValue);
+                // }
 
-                WeightedGraphNode tempNode = endNode;
-                while (tempNode != null)
-                {
-                    path.Add(tempNode.NodeId);
-                    tempNode = tempNode.ParentNode;
-                }
-
-                path.Reverse(); // 反转：终点→起点 → 起点→终点
-                return (path, endNode.GCost);
+                // WeightedGraphNode tempNode = endNode;
+                // while (tempNode != null)
+                // {
+                //     path.Add(tempNode.NodeId);
+                //     tempNode = tempNode.ParentNode;
+                // }
+                //
+                // path.Reverse(); // 反转：终点→起点 → 起点→终点
+                // return (path, endNode.GCost);
             }
 
             #endregion

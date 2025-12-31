@@ -1,16 +1,17 @@
-﻿using System;
+﻿using Ghost.Terrain;
 using UnityEngine;
 
 namespace Ghost
 {
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(GroundMovement))]
-    public class Character:MonoBehaviour
+    [RequireComponent(typeof(CrossMovement))]
+    public class Character : MonoBehaviour
     {
-        private GroundMovement _groundMovement;
+        private CrossMovement _movement;
+
         private void Start()
         {
-            _groundMovement = GetComponent<GroundMovement>();
+            _movement = GetComponent<CrossMovement>();
             MJoyStick.OnMove += OnMove;
         }
 
@@ -28,7 +29,7 @@ namespace Ghost
 
         private void OnMove(Vector2 dir)
         {
-            _groundMovement.InputVelocity = dir;
+            _movement.InputVelocity = dir;
         }
     }
 }

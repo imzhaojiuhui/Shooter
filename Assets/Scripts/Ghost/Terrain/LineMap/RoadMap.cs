@@ -5,12 +5,11 @@ using UnityEngine;
 namespace Ghost.Terrain
 {
     [DisallowMultipleComponent]
-    public class RoadMap: MonoSingleton<RoadMap>
+    public class RoadMap : MonoSingleton<RoadMap>
     {
-        [Header("2D画线配置")]
-        public Color lineColor = Color.red;
+        [Header("2D画线配置")] public Color lineColor = Color.red;
         public float lineWidth = 0.1f;
-        
+
         protected override void Awake()
         {
             base.Awake();
@@ -19,12 +18,14 @@ namespace Ghost.Terrain
             {
                 DrawNewLine(line.start.ToVector2(), line.end.ToVector2());
             }
+
             RoadLines = lines;
         }
 
-        public List<RoadLine> RoadLines { get; private set; }
+        public List<LineSave> RoadLines { get; private set; }
 
         private int _lineId;
+
         private GameObject DrawNewLine(Vector2 start, Vector2 realEndPos)
         {
             GameObject lineObj = new GameObject($"2D_Line_{_lineId++}");
@@ -38,7 +39,7 @@ namespace Ghost.Terrain
             lr.positionCount = 2;
             lr.SetPosition(0, start);
             lr.SetPosition(1, realEndPos);
-        
+
             return lineObj;
         }
     }

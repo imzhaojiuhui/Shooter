@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace KISS
 {
-    public static class MathUtils
+    public static class MathTool
     {
         /// <summary>
         /// 计算【点】到【有限线段】的最短距离 (Unity2D 最优写法，99%场景用这个)
@@ -167,7 +167,7 @@ namespace KISS
         /// <summary>
         /// 去除重复点（解决浮点精度误差）
         /// </summary>
-        public static List<Vector2> RemoveRepeatPoints(List<Vector2> points)
+        public static List<Vector2> RemoveRepeatPoints(List<Vector2> points, float epsilon = 1e-5f)
         {
             List<Vector2> uniquePoints = new List<Vector2>();
             foreach (var p in points)
@@ -175,7 +175,7 @@ namespace KISS
                 bool isRepeat = false;
                 foreach (var up in uniquePoints)
                 {
-                    if (Vector2.Distance(p, up) < 1e-5)
+                    if (Vector2.Distance(p, up) < epsilon)
                     {
                         isRepeat = true;
                         break;
@@ -194,6 +194,32 @@ namespace KISS
         public static List<Vector2> SortPoints(List<Vector2> points)
         {
             return points.OrderBy(p => p.x).ThenBy(p => p.y).ToList();
+        }
+
+        /// <summary>
+        /// 判断两个向量的夹角是否在deg度以内（含deg度）
+        /// </summary>
+        public static bool IsAngleWithinDeg(Vector3 vecA, Vector3 vecB, float deg)
+        {
+            // 1. 归一化向量 → 转为单位向量（长度=1，消除向量长度对判断的影响）
+            Vector3 dirA = vecA.normalized;
+            Vector3 dirB = vecB.normalized;
+            // 2. 计算点积 + 核心判断：点积 ≥ cos(deg) → 夹角 ≤deg
+            float dot = Vector3.Dot(dirA, dirB);
+            return dot >= Mathf.Cos(Mathf.Deg2Rad * deg);
+        }
+
+        /// <summary>
+        /// 判断两个向量的夹角是否在45度以内（含45度）
+        /// </summary>
+        public static bool IsAngleWithin45(Vector3 vecA, Vector3 vecB)
+        {
+            // 1. 归一化向量 → 转为单位向量（长度=1，消除向量长度对判断的影响）
+            Vector3 dirA = vecA.normalized;
+            Vector3 dirB = vecB.normalized;
+            // 2. 计算点积 + 核心判断：点积 ≥ cos(45°) → 夹角 ≤45°
+            float dot = Vector3.Dot(dirA, dirB);
+            return dot >= Mathf.Cos(Mathf.Deg2Rad * 45);
         }
     }
 }

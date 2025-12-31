@@ -1,8 +1,9 @@
-﻿using UnityEngine;
+﻿using System;
 using System.Collections.Generic;
 using Ghost;
 using Ghost.UI;
 using KISS;
+using UnityEngine;
 
 /// <summary>
 /// Unity 纯2D正交场景 终极完整版
@@ -16,48 +17,50 @@ using KISS;
 /// </summary>
 public class WorldLineDraw2D : MonoBehaviour
 {
-    [Header("2D画线配置")]
-    public Color lineColor = Color.red;
+    [Header("2D画线配置")] public Color lineColor = Color.red;
     public float lineWidth = 0.1f;
     public Camera mainCamera;
     public float minLineLength = 0.1f;
 
-    [Header("相机控制配置【重要】")]
-    public float cameraMoveSpeed = 5f;      // 相机平移速度
-    public float cameraZoomSpeed = 0.5f;    // 滚轮缩放速度
-    public float minCameraSize = 1f;        // 相机最小视野尺寸
-    public float maxCameraSize = 20f;       // 相机最大视野尺寸
+    [Header("相机控制配置【重要】")] public float cameraMoveSpeed = 5f; // 相机平移速度
+    public float cameraZoomSpeed = 0.5f; // 滚轮缩放速度
+    public float minCameraSize = 1f; // 相机最小视野尺寸
+    public float maxCameraSize = 20f; // 相机最大视野尺寸
 
-    [Header("删除线条配置")]
-    public float lineCheckRadius = 0.2f;    // 删除时鼠标检测半径
+    [Header("删除线条配置")] public float lineCheckRadius = 0.2f; // 删除时鼠标检测半径
     public Color deleteLineHintColor = Color.yellow;
 
-    [Header("内部状态")]
-    private bool isDrawing = false;
-    private bool isMoveCamera = false;      // 是否正在平移相机
-    private bool isDeleteLine = false;      // 是否正在删除线条
+    [Header("内部状态")] private bool isDrawing = false;
+    private bool isMoveCamera = false; // 是否正在平移相机
+    private bool isDeleteLine = false; // 是否正在删除线条
     private Vector2 startWorldPos;
     private Vector2 endWorldPos;
-    private Vector2 lastMouseScreenPos;     // 上一帧鼠标屏幕坐标(相机平移专用)
+    private Vector2 lastMouseScreenPos; // 上一帧鼠标屏幕坐标(相机平移专用)
     private LineRenderer previewLine;
     private LineRenderer deletePreviewLine;
 
     #region 线段数据存储结构
-    [System.Serializable]
+
+    [Serializable]
     public class Line2DData
     {
         public Vector2 startPos;
+
         public Vector2 endPos;
+
         // public LineType lineType;
         // public float lineLength;
         public GameObject lineObj;
     }
+
     public enum LineType
     {
         Horizontal,
         Vertical
     }
+
     public List<Line2DData> all2DLineDatas = new List<Line2DData>();
+
     #endregion
 
     void Start()
@@ -67,7 +70,7 @@ public class WorldLineDraw2D : MonoBehaviour
         // 创建画线预览线和删除轨迹预览线
         CreatePreviewLine();
         CreateDeletePreviewLine();
-        
+
         // init data
         var saveLines = GhostLocalSave.Instance.GetRoadLines();
         if (saveLines != null)
@@ -83,37 +86,43 @@ public class WorldLineDraw2D : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.S))
         {
-            List<RoadLine> lines = new();
+            List<LineSave> lines = new();
             foreach (var line in all2DLineDatas)
             {
-                lines.Add(new RoadLine()
+                lines.Add(new LineSave()
                 {
                     start = line.startPos.ToArray(),
                     end = line.endPos.ToArray(),
                 });
             }
+
             GhostLocalSave.Instance.SaveRoadLines(lines);
 
             Tips.Instance.Pop("saved").Forget();
             return;
         }
-        
+
         #region ★优先级最高：相机平移 (两种方式：Ctrl+左键 、 滚轮中键按下拖动)★
-        if ( (Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButton(0)) || Input.GetMouseButton(2) )
+
+        if ((Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButton(0)) || Input.GetMouseButton(2))
         {
             CameraMove();
             return; // 相机移动时，屏蔽所有其他功能，无任何误触
         }
+
         #endregion
 
         #region ★滚轮缩放相机视野 (无冲突，随时可用)
+
         if (Input.GetAxis("Mouse ScrollWheel") != 0)
         {
             CameraZoom();
         }
+
         #endregion
 
         #region ★优先级次之：D键+拖动 删除线条
+
         if (Input.GetKey(KeyCode.D))
         {
             isDeleteLine = true;
@@ -127,9 +136,11 @@ public class WorldLineDraw2D : MonoBehaviour
                 deletePreviewLine.gameObject.SetActive(false);
             }
         }
+
         #endregion
 
         #region ★基础功能：鼠标绘制纯横竖线 (删除模式下屏蔽)
+
         if (isDeleteLine) return;
 
         if (Input.GetMouseButtonDown(0))
@@ -161,10 +172,12 @@ public class WorldLineDraw2D : MonoBehaviour
                 Create2DFinalLine(startWorldPos, endWorldPos);
             }
         }
+
         #endregion
     }
 
     #region ========== 画线核心方法 ==========
+
     private void CreatePreviewLine()
     {
         GameObject previewObj = new GameObject("2D_Preview_Line");
@@ -212,7 +225,7 @@ public class WorldLineDraw2D : MonoBehaviour
         Line2DData lineData = new Line2DData();
         lineData.startPos = start;
         lineData.endPos = realEndPos;
-	    // lineData.lineType = currLineType;
+        // lineData.lineType = currLineType;
         // lineData.lineLength = Vector2.Distance(start, realEndPos);
         var lineLength = Vector2.Distance(start, realEndPos);
         lineData.lineObj = lineObj;
@@ -222,6 +235,7 @@ public class WorldLineDraw2D : MonoBehaviour
     }
 
     private int _lineId;
+
     private GameObject DrawNewLine(Vector2 start, Vector2 realEndPos)
     {
         GameObject lineObj = new GameObject($"2D_Line_{_lineId++}");
@@ -235,13 +249,14 @@ public class WorldLineDraw2D : MonoBehaviour
         lr.positionCount = 2;
         lr.SetPosition(0, start);
         lr.SetPosition(1, realEndPos);
-        
+
         return lineObj;
     }
 
     #endregion
 
     #region ========== 相机控制核心方法 (平移+缩放) ==========
+
     /// <summary>
     /// 相机平移核心方法
     /// 触发方式：① Ctrl + 鼠标左键拖动  ② 按下鼠标滚轮(中键) + 拖动
@@ -285,9 +300,11 @@ public class WorldLineDraw2D : MonoBehaviour
         // 限制缩放范围，防止无限缩放导致场景丢失
         mainCamera.orthographicSize = Mathf.Clamp(newCameraSize, minCameraSize, maxCameraSize);
     }
+
     #endregion
 
     #region ========== 删除线条核心方法 ==========
+
     private void CreateDeletePreviewLine()
     {
         GameObject deleteObj = new GameObject("2D_Delete_Preview_Line");
@@ -330,15 +347,19 @@ public class WorldLineDraw2D : MonoBehaviour
     // 精准检测：鼠标点是否在线段的检测半径范围内
     private bool IsPointInLineRange(Vector2 point, Vector2 lineStart, Vector2 lineEnd, float checkRadius)
     {
-        float closestPointX = Mathf.Clamp(point.x, Mathf.Min(lineStart.x, lineEnd.x), Mathf.Max(lineStart.x, lineEnd.x));
-        float closestPointY = Mathf.Clamp(point.y, Mathf.Min(lineStart.y, lineEnd.y), Mathf.Max(lineStart.y, lineEnd.y));
+        float closestPointX =
+            Mathf.Clamp(point.x, Mathf.Min(lineStart.x, lineEnd.x), Mathf.Max(lineStart.x, lineEnd.x));
+        float closestPointY =
+            Mathf.Clamp(point.y, Mathf.Min(lineStart.y, lineEnd.y), Mathf.Max(lineStart.y, lineEnd.y));
         Vector2 closestPoint = new Vector2(closestPointX, closestPointY);
         float distance = Vector2.Distance(point, closestPoint);
         return distance <= checkRadius;
     }
+
     #endregion
 
     #region ========== 线段数据操作工具方法 ==========
+
     // 清空所有线段和数据
     public void ClearAll2DLines()
     {
@@ -368,5 +389,6 @@ public class WorldLineDraw2D : MonoBehaviour
             all2DLineDatas.RemoveAt(index);
         }
     }
+
     #endregion
 }
