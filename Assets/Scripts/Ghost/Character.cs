@@ -4,14 +4,14 @@ using UnityEngine;
 namespace Ghost
 {
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(CrossMovement))]
+    [RequireComponent(typeof(CrossMovementV2))]
     public class Character : MonoBehaviour
     {
-        private CrossMovement _movement;
+        private CrossMovementV2 _movement;
 
         private void Start()
         {
-            _movement = GetComponent<CrossMovement>();
+            _movement = GetComponent<CrossMovementV2>();
             MJoyStick.OnMove += OnMove;
         }
 

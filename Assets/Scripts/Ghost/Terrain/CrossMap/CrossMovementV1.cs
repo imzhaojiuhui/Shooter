@@ -2,7 +2,7 @@
 
 namespace Ghost.Terrain
 {
-    public class CrossMovement : MonoBehaviour
+    public class CrossMovementV1 : MonoBehaviour
     {
         public float baseSpeed = 3;
         [Header("登梯/下梯 距离小于这个值可切换过去")] public float turnDistance = .4f;

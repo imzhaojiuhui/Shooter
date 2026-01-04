@@ -63,6 +63,15 @@ namespace KISS
                 start = s;
                 end = e;
             }
+
+            public bool Horizontal
+            {
+                get
+                {
+                    var dir = end - start;
+                    return Mathf.Abs(dir.x) > Mathf.Abs(dir.y);
+                }
+            }
         }
 
         #region 核心修复：手动实现2D向量叉积（重中之重）

@@ -44,7 +44,29 @@ namespace Ghost.Terrain
 
                     if (MathTool.IsTwoLinesIntersect(lineA, lineB, out Vector2 point))
                     {
-                        nodesPosOnLine.Add(point);
+                        nodesPosOnLine.Add(point); // intersection
+
+                        float enterWidth = 4f;
+                        var vLine = lineA.Horizontal ? lineB : lineA;
+                        Debug.Assert(!vLine.Horizontal);
+
+                        var yMax = Mathf.Max(vLine.start.y, vLine.end.y);
+                        var yMin = Mathf.Min(vLine.start.y, vLine.end.y);
+                        // var stairDir = Vector2.down;
+                        bool up = false;
+                        var downRectYMin = point.y - enterWidth;
+                        if (yMax - point.y > point.y - yMin)
+                        {
+                            up = true;
+                            // stairDir = Vector2.up;
+                            downRectYMin = point.y;
+                        }
+
+                        var climbRect = new Rect(point.x - enterWidth / 2, point.y - .1f, enterWidth, .2f);
+                        var downRect = new Rect(point.x - .1f, downRectYMin, .2f, enterWidth);
+
+                        _climbRects.Add((climbRect, up));
+                        _downRects.Add((downRect, point));
                     }
                 }
 
@@ -74,6 +96,44 @@ namespace Ghost.Terrain
         }
 
         public PathUtils.WeightedUndirectedGraph Graph { get; private set; }
+
+        private readonly List<(Rect, bool)> _climbRects = new(); // rect, up
+        private readonly List<(Rect, Vector2)> _downRects = new(); // rect, point
+
+
+        public bool EnterClimbRect(Vector2 pos, out Rect climbRect, out bool isUp)
+        {
+            foreach (var (rect, up) in _climbRects)
+            {
+                if (rect.Contains(pos))
+                {
+                    climbRect = rect;
+                    isUp = up;
+                    return true;
+                }
+            }
+
+            climbRect = Rect.zero;
+            isUp = false;
+            return false;
+        }
+
+        public bool EnterDownRect(Vector2 pos, out Rect downRect, out Vector2 downPos)
+        {
+            foreach (var (rect, p) in _downRects)
+            {
+                if (rect.Contains(pos))
+                {
+                    downRect = rect;
+                    downPos = p;
+                    return true;
+                }
+            }
+
+            downRect = Rect.zero;
+            downPos = Vector2.zero;
+            return false;
+        }
 
         // private List<MathUtils.Line2D> _lines;
         //

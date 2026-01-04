@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Ghost
 {
-    public class GroundMovement : MonoBehaviour
+    public class V0GroundMovement : MonoBehaviour
     {
         public float baseSpeed = 3;
         [Header("登梯/下梯 距离小于这个值直接跳过去")] public float turnDistance = .4f;

@@ -1014,8 +1014,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2000736174}
-  - component: {fileID: 2000736176}
   - component: {fileID: 2000736175}
+  - component: {fileID: 2000736176}
   m_Layer: 0
   m_Name: character
   m_TagString: Untagged
@@ -1062,13 +1062,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 2000736170}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a587c89ddfa8437082513379e421330e, type: 3}
+  m_Script: {fileID: 11500000, guid: ad5ee24bc5134ea19cdaf2aac3852918, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Ghost.Terrain.CrossMovement
+  m_EditorClassIdentifier: Assembly-CSharp::Ghost.Terrain.CrossMovementV2
   baseSpeed: 3
-  turnDistance: 0.4
-  turnDelaySeconds: 0.2
-  inclineDistance: 1
 --- !u!1 &2044688928
 GameObject:
   m_ObjectHideFlags: 0
