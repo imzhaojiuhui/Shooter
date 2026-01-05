@@ -6,7 +6,12 @@ namespace Ghost.Terrain
     public class CrossMovementV2 : Movement
     {
         private bool _onLadder = false;
-        private (PathUtils.WeightedGraphNode, PathUtils.WeightedGraphNode) _connectedEdge;
+        private (PathUtils.WeightedGraphNode, PathUtils.WeightedGraphNode) _alongLine;
+
+        public override (PathUtils.WeightedGraphNode, PathUtils.WeightedGraphNode) AlongLine
+        {
+            get => _alongLine;
+        }
 
         private void Start()
         {
@@ -17,14 +22,14 @@ namespace Ghost.Terrain
             var arrow = edgeTo.WorldPos - edgeFrom.WorldPos;
             _onLadder = Mathf.Abs(arrow.x) < Mathf.Abs(arrow.y);
 
-            _connectedEdge = CrossMap.Instance.Graph.GetConnectedEdge(edgeFrom, edgeTo.WorldPos - edgeFrom.WorldPos);
+            _alongLine = CrossMap.Instance.Graph.GetLineSegment(edgeFrom, edgeTo.WorldPos - edgeFrom.WorldPos);
         }
 
         private void SwitchOnLadder(bool onLadder, Vector2 conerPos)
         {
             _onLadder = onLadder;
             var coner = CrossMap.Instance.Graph.GetNearestNode(conerPos);
-            _connectedEdge = CrossMap.Instance.Graph.GetConnectedEdge(coner, onLadder ? Vector2.up : Vector2.right);
+            _alongLine = CrossMap.Instance.Graph.GetLineSegment(coner, onLadder ? Vector2.up : Vector2.right);
         }
 
         private void Update()
@@ -55,11 +60,11 @@ namespace Ghost.Terrain
             {
                 var enterPos = climbRect.center;
                 var toEnterPos = enterPos - (Vector2)curPos;
-                if (enterPos.x < Mathf.Min(_connectedEdge.Item1.WorldPos.x, _connectedEdge.Item2.WorldPos.x))
+                if (enterPos.x < Mathf.Min(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x))
                 {
                 }
 
-                if (enterPos.x > Mathf.Max(_connectedEdge.Item1.WorldPos.x, _connectedEdge.Item2.WorldPos.x))
+                if (enterPos.x > Mathf.Max(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x))
                 {
                 }
 
@@ -161,10 +166,10 @@ namespace Ghost.Terrain
 
             var toPos = transform.position + (Vector3)forward;
 
-            var xMin = Mathf.Min(_connectedEdge.Item1.WorldPos.x, _connectedEdge.Item2.WorldPos.x);
-            var xMax = Mathf.Max(_connectedEdge.Item1.WorldPos.x, _connectedEdge.Item2.WorldPos.x);
-            var yMin = Mathf.Min(_connectedEdge.Item1.WorldPos.y, _connectedEdge.Item2.WorldPos.y);
-            var yMax = Mathf.Max(_connectedEdge.Item1.WorldPos.y, _connectedEdge.Item2.WorldPos.y);
+            var xMin = Mathf.Min(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x);
+            var xMax = Mathf.Max(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x);
+            var yMin = Mathf.Min(_alongLine.Item1.WorldPos.y, _alongLine.Item2.WorldPos.y);
+            var yMax = Mathf.Max(_alongLine.Item1.WorldPos.y, _alongLine.Item2.WorldPos.y);
 
             var clampX = Mathf.Clamp(toPos.x, xMin, xMax);
             var clampY = Mathf.Clamp(toPos.y, yMin, yMax);

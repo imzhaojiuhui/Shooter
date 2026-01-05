@@ -1,0 +1,140 @@
+﻿using KISS;
+using UnityEngine;
+
+namespace Ghost.Terrain
+{
+    public class AIMovementFollower : MonoBehaviour
+    {
+        // private IEnumerator Start()
+        // {
+        //     var graph = CrossMap.Instance.Graph;
+        //     while (true)
+        //     {
+        //         var from = transform.position;
+        //         var to = Character.Instance.transform.position;
+        //         
+        //         var fromNode = graph.GetNearestNode(transform.position);
+        //         var toNode = graph.GetNearestNode(to);
+        //         
+        //         if (fromNode == toNode)
+        //         {
+        //             transform.position = (to-from).normalized*Time.deltaTime;
+        //             yield return null;
+        //             break;
+        //         }
+        //         
+        //         {
+        //             var path = graph.FindShortestPath(fromNode, toNode);
+        //             foreach (var nodeId in path)
+        //             {
+        //                 var node = graph.GetNodeById(nodeId);
+        //                 var dir = node.WorldPos - (Vector2)this.transform.position;
+        //                 if (dir.sqrMagnitude < 1e-6)
+        //                 {
+        //                     // 已到达node
+        //                     continue;
+        //                 }
+        //
+        //                 dir = dir.normalized;
+        //
+        //                 while (true)
+        //                 {
+        //                     var toPos = this.transform.position + (Vector3)dir * 3 * Time.deltaTime;
+        //                     var relativePos = (Vector2)toPos - node.WorldPos;
+        //                     var dot = Vector2.Dot(dir, relativePos);
+        //                     if (dot > 0) // toPos超过node
+        //                     {
+        //                         break;
+        //                     }
+        //
+        //                     this.transform.position = toPos;
+        //                     yield return null;
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        private bool _onGround;
+
+        // private PathUtils.WeightedGraphNode _edgeFrom;
+        // private PathUtils.WeightedGraphNode _edgeTo;
+        private void Start()
+        {
+            var (edgeFrom, edgeTo, pos) =
+                CrossMap.Instance.Graph.GetNearestEdgePos(this.transform.position);
+            this.transform.position = pos;
+            _onGround = new MathTool.Line2D(edgeFrom.WorldPos, edgeTo.WorldPos).Horizontal;
+            // _edgeFrom = edgeFrom;
+            // _edgeTo = edgeTo;
+        }
+
+        private void Update()
+        {
+            var graph = CrossMap.Instance.Graph;
+            var from = transform.position;
+            var to = Character.Instance.transform.position;
+            var alongLine = Character.Instance.Movement.AlongLine;
+            // var (toEdgeA, toEdgeB, pos) = graph.GetNearestEdgePos(to);
+            var curEdge = CrossMap.Instance.Graph.GetEdgeByPoint(this.transform.position, _onGround);
+            PathUtils.WeightedGraphNode fromEdgeA, fromEdgeB;
+            if (curEdge == null)
+            {
+                (fromEdgeA, fromEdgeB, _) = CrossMap.Instance.Graph.GetNearestEdgePos(this.transform.position);
+            }
+            else
+            {
+                (fromEdgeA, fromEdgeB) = curEdge.Value;
+            }
+
+            var path = graph.FindShortestPath(from, to, (fromEdgeA, fromEdgeB), alongLine);
+            var forward = 1f * Time.deltaTime;
+            // var preNode = fromEdgeA;
+            foreach (var (p, node) in path)
+            {
+                var toNext = p - (Vector2)this.transform.position;
+                if (toNext.magnitude < 0.1)
+                {
+                    // if (node != fromEdgeA &&  node != fromEdgeB)
+                    // {
+                    //     preNode = node;
+                    // }
+                    // 已到达node
+                    continue;
+                }
+
+                if (toNext.magnitude <= forward)
+                {
+                    this.transform.position = p;
+                    return;
+                }
+
+                var dir = toNext.normalized;
+                _onGround = Mathf.Abs(dir.x) > Mathf.Abs(dir.y);
+                this.transform.position += forward * (Vector3)dir;
+                // if (node != _edgeFrom &&  node != _edgeTo)
+                // {
+                //     if (node == null) // end
+                //     {
+                //         _edgeFrom = toEdgeA;
+                //         _edgeTo = toEdgeB;
+                //     }
+                //     else if (preNode == _edgeFrom)
+                //     {
+                //         _edgeTo =  node;
+                //     }
+                //     else if (preNode == _edgeTo)
+                //     {
+                //         _edgeFrom = node;
+                //     }
+                //     else
+                //     {
+                //         _edgeFrom = preNode;
+                //         _edgeTo = node;
+                //     }
+                // }
+                return;
+            }
+        }
+    }
+}

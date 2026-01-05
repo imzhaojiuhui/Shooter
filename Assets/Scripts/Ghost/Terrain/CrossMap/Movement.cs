@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using KISS;
+using UnityEngine;
 
 namespace Ghost.Terrain
 {
@@ -11,6 +12,18 @@ namespace Ghost.Terrain
         public float Speed
         {
             get { return baseSpeed; }
+        }
+
+        public virtual (PathUtils.WeightedGraphNode, PathUtils.WeightedGraphNode) AlongLine { get; }
+
+        public bool OnGround
+        {
+            get
+            {
+                var alongLine = AlongLine;
+                var line = new MathTool.Line2D(alongLine.Item1.WorldPos, alongLine.Item2.WorldPos);
+                return line.Horizontal;
+            }
         }
     }
 }

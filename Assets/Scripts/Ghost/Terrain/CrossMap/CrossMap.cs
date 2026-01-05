@@ -46,7 +46,7 @@ namespace Ghost.Terrain
                     {
                         nodesPosOnLine.Add(point); // intersection
 
-                        float enterWidth = 1f;
+                        float enterWidth = 2f;
                         var vLine = lineA.Horizontal ? lineB : lineA;
                         Debug.Assert(!vLine.Horizontal);
 

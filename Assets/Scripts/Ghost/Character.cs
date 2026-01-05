@@ -1,13 +1,15 @@
 ﻿using Ghost.Terrain;
+using KISS;
 using UnityEngine;
 
 namespace Ghost
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(CrossMovementV2))]
-    public class Character : MonoBehaviour
+    public class Character : MonoSingleton<Character>
     {
         private CrossMovementV2 _movement;
+        public Movement Movement => _movement;
 
         private void Start()
         {

@@ -253,7 +253,12 @@ namespace Ghost.Terrain
                 return null;
             }
 
-            public (WeightedGraphNode, WeightedGraphNode) GetConnectedEdge(WeightedGraphNode coner, Vector2 direction)
+            // public bool GetEdge(Vector2 from, Vector2 to)
+            // {
+            //     GetNearestEdgePos(from, out var edgePos);
+            // }
+
+            public (WeightedGraphNode, WeightedGraphNode) GetLineSegment(WeightedGraphNode coner, Vector2 direction)
             {
                 var next = coner;
                 var pre = coner;
@@ -324,6 +329,34 @@ namespace Ghost.Terrain
             #region 线段
 
             private List<(WeightedGraphNode, WeightedGraphNode)> _edges = new();
+
+            // public void GetEdgeFromLine(Vector2 pos, )
+
+            public (WeightedGraphNode, WeightedGraphNode)? GetEdgeByPoint(Vector2 point, bool onGround)
+            {
+                foreach (var (a, b) in _edges)
+                {
+                    var line = new MathTool.Line2D(a.WorldPos, b.WorldPos);
+                    if (line.Horizontal)
+                    {
+                        if (!onGround)
+                        {
+                            continue;
+                        }
+                    }
+                    else if (onGround)
+                    {
+                        continue;
+                    }
+
+                    if (MathTool.IsPointOnLine(point, line, .1f))
+                    {
+                        return (a, b);
+                    }
+                }
+
+                return null;
+            }
 
             public (WeightedGraphNode, WeightedGraphNode, Vector2) GetNearestEdgePos(Vector2 point)
             {
@@ -403,12 +436,96 @@ namespace Ghost.Terrain
             /// <summary>
             /// 
             /// </summary>
+            /// <param name="start"></param>
+            /// <param name="end"></param>
+            /// <returns>最短路径的集合（→拐点→终点），无路径返回空列表</returns>
+            public IEnumerable<(Vector2, WeightedGraphNode)> FindShortestPath(Vector2 start, Vector2 end,
+                (WeightedGraphNode, WeightedGraphNode) edgeStart,
+                (WeightedGraphNode, WeightedGraphNode) edgeEnd)
+            {
+                // var edgeStart = GetEdgeByPoint(start, startOnGround);
+                // var edgeEnd = GetEdgeByPoint(end, endOnGround);
+                // if (edgeStart == null || edgeEnd == null)
+                // {
+                //     yield break;
+                // }
+
+                var (fromNode1, fromNode2) = edgeStart;
+                var (toNode1, toNode2) = edgeEnd;
+                if (MathTool.IsCollinearIntersect(
+                        new MathTool.Line2D(fromNode1.WorldPos, fromNode2.WorldPos),
+                        new MathTool.Line2D(toNode1.WorldPos, toNode2.WorldPos)))
+                {
+                    yield return (end, null);
+                    yield break;
+                }
+                // if (fromNode1 == toNode1 || fromNode2 == toNode2 || fromNode1 == toNode2 || fromNode2 == toNode1)
+                // {
+                //     yield return (end, null);
+                //     yield break;
+                // }
+
+                var path = FindShortestPath(fromNode1, toNode1); // to pro
+                // if (path.Count <= 0)
+                // {
+                //     // 没路
+                //     yield break;
+                // }
+                // Debug.Assert(path.Count > 1);
+                // bool skip1 = path[1] == fromNode2.NodeId;
+                // bool skipA2 = path[^2] == toNode2.NodeId;
+
+                int index = 0;
+                int firstNodeId = 0;
+                foreach (var node in path)
+                {
+                    int i = index++;
+                    if (i == 0)
+                    {
+                        firstNodeId = node;
+                        continue;
+                    }
+
+                    if (i == 1)
+                    {
+                        if (node != fromNode2.NodeId)
+                        {
+                            var first = GetNodeById(firstNodeId);
+                            yield return (first.WorldPos, first);
+                        }
+                    }
+
+                    var curNode = GetNodeById(node);
+                    yield return (curNode.WorldPos, curNode);
+                    if (node == toNode2.NodeId) // 倒数第二个是to拐点
+                    {
+                        break;
+                    }
+                }
+
+                if (index == 0)
+                {
+                    // 没路
+                    yield break;
+                }
+
+                yield return (end, null);
+            }
+
+            /// <summary>
+            /// 
+            /// </summary>
             /// <param name="startNode"></param>
             /// <param name="endNode"></param>
             /// <returns>最短路径的集合（起点→拐点→终点），无路径返回空列表</returns>
             public IEnumerable<int> FindShortestPath(WeightedGraphNode startNode,
                 WeightedGraphNode endNode)
             {
+                // if (startNode == endNode)
+                // {
+                //     return new[] {startNode.NodeId};
+                // }
+
                 var cache = GetPathFindCache(startNode.NodeId, endNode.NodeId);
                 if (cache == null)
                 {

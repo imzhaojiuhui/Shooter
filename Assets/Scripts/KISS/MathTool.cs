@@ -87,6 +87,29 @@ namespace KISS
         #endregion
 
         /// <summary>
+        /// 端点接触/线段共线重叠
+        /// </summary>
+        /// <param name="line1"></param>
+        /// <param name="line2"></param>
+        /// <returns></returns>
+        public static bool IsCollinearIntersect(Line2D line1, Line2D line2)
+        {
+            if (Cross(line1.end - line1.start, line2.end - line2.start) > 1e-6)
+            {
+                return false;
+            }
+
+            Vector2 A = line1.start;
+            Vector2 B = line1.end;
+            Vector2 C = line2.start;
+            Vector2 D = line2.end;
+            // 端点接触/线段共线重叠
+
+            return IsPointOnLine(C, line1) || IsPointOnLine(D, line1) ||
+                   IsPointOnLine(A, line2) || IsPointOnLine(B, line2);
+        }
+
+        /// <summary>
         /// 核心方法：判断两条2D线段是否相交，并输出交点坐标
         /// </summary>
         public static bool IsTwoLinesIntersect(Line2D line1, Line2D line2, out Vector2 intersection)
@@ -137,15 +160,16 @@ namespace KISS
         /// <summary>
         /// 辅助方法：判断点是否在线段上（含端点）
         /// </summary>
-        public static bool IsPointOnLine(Vector2 point, Line2D line)
+        public static bool IsPointOnLine(Vector2 point, Line2D line, double epsilon = 1e-6) // epsilon = 1e-6
         {
             // ✅ 修正：叉积判断点是否在线上
-            if (Mathf.Abs(Cross(line.end - line.start, point - line.start)) > 1e-6) return false;
+            if (Mathf.Abs(Cross(line.end - line.start, point - line.start)) > epsilon) return false;
             float minX = Mathf.Min(line.start.x, line.end.x);
             float maxX = Mathf.Max(line.start.x, line.end.x);
             float minY = Mathf.Min(line.start.y, line.end.y);
             float maxY = Mathf.Max(line.start.y, line.end.y);
-            return point.x >= minX - 1e-6 && point.x <= maxX + 1e-6 && point.y >= minY - 1e-6 && point.y <= maxY + 1e-6;
+            return point.x >= minX - epsilon && point.x <= maxX + epsilon && point.y >= minY - epsilon &&
+                   point.y <= maxY + epsilon;
         }
 
         /// <summary>
