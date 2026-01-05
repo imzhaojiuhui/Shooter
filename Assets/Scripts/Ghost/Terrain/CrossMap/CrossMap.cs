@@ -46,7 +46,7 @@ namespace Ghost.Terrain
                     {
                         nodesPosOnLine.Add(point); // intersection
 
-                        float enterWidth = 4f;
+                        float enterWidth = 1f;
                         var vLine = lineA.Horizontal ? lineB : lineA;
                         Debug.Assert(!vLine.Horizontal);
 
@@ -54,12 +54,12 @@ namespace Ghost.Terrain
                         var yMin = Mathf.Min(vLine.start.y, vLine.end.y);
                         // var stairDir = Vector2.down;
                         bool up = false;
-                        var downRectYMin = point.y - enterWidth;
+                        var downRectYMin = point.y - enterWidth + .01f;
                         if (yMax - point.y > point.y - yMin)
                         {
                             up = true;
                             // stairDir = Vector2.up;
-                            downRectYMin = point.y;
+                            downRectYMin = point.y - .01f;
                         }
 
                         var climbRect = new Rect(point.x - enterWidth / 2, point.y - .1f, enterWidth, .2f);

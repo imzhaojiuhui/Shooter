@@ -238,6 +238,55 @@ namespace Ghost.Terrain
                 return false;
             }
 
+            private WeightedGraphNode GetNextNode(WeightedGraphNode curNode, Vector2 direction)
+            {
+                foreach (var edge in curNode.AdjacentEdges)
+                {
+                    var target = GetNodeById(edge.targetNodeId);
+                    var dir = target.WorldPos - curNode.WorldPos;
+                    if (MathTool.IsAngleWithin45(dir, direction))
+                    {
+                        return target;
+                    }
+                }
+
+                return null;
+            }
+
+            public (WeightedGraphNode, WeightedGraphNode) GetConnectedEdge(WeightedGraphNode coner, Vector2 direction)
+            {
+                var next = coner;
+                var pre = coner;
+                int i = 0;
+                for (; i < 100; i++)
+                {
+                    var _next = GetNextNode(next, direction);
+                    if (_next == null)
+                    {
+                        break;
+                    }
+
+                    next = _next;
+                }
+
+                Debug.Assert(i < 20);
+
+                var neg = -direction;
+                for (i = 0; i < 100; i++)
+                {
+                    var _pre = GetNextNode(pre, neg);
+                    if (_pre == null)
+                    {
+                        break;
+                    }
+
+                    pre = _pre;
+                }
+
+                Debug.Assert(i < 20);
+                return (pre, next);
+            }
+
             /// <summary>
             /// 4. 获取图中所有节点
             /// </summary>
