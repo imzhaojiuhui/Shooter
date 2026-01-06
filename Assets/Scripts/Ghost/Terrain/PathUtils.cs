@@ -253,10 +253,25 @@ namespace Ghost.Terrain
                 return null;
             }
 
-            // public bool GetEdge(Vector2 from, Vector2 to)
-            // {
-            //     GetNearestEdgePos(from, out var edgePos);
-            // }
+            public (WeightedGraphNode, WeightedGraphNode) GetEdgeFromeLine(Vector2 pos,
+                (WeightedGraphNode, WeightedGraphNode) lineSegment)
+            {
+                var (A, B) = lineSegment;
+                var dir = B.WorldPos - A.WorldPos;
+                var pre = A;
+                WeightedGraphNode next;
+                while ((next = GetNextNode(pre, dir)) != null)
+                {
+                    if (MathTool.IsPointOnLine(pos, new MathTool.Line2D(pre.WorldPos, next.WorldPos)))
+                    {
+                        return (pre, next);
+                    }
+
+                    pre = next;
+                }
+
+                return (A, B);
+            }
 
             public (WeightedGraphNode, WeightedGraphNode) GetLineSegment(WeightedGraphNode coner, Vector2 direction)
             {
@@ -465,51 +480,79 @@ namespace Ghost.Terrain
                 //     yield break;
                 // }
 
-                var path = FindShortestPath(fromNode1, toNode1); // to pro
-                // if (path.Count <= 0)
+                var to1 = QueryPathCacheItem(fromNode1, toNode1);
+                var to2 = QueryPathCacheItem(fromNode2, toNode2);
+                var toNode = to1.TotalWeight < to2.TotalWeight ? toNode1 : toNode2;
+                var from1 = QueryPathCacheItem(fromNode1, toNode);
+                var from2 = QueryPathCacheItem(fromNode2, toNode);
+                var fromNode = from1.TotalWeight < from2.TotalWeight ? fromNode1 : fromNode2;
+
+                var cache = QueryPathCacheItem(fromNode, toNode);
+                if (cache.PathNodeIds.Count == 0)
+                {
+                    // 不连通
+                    yield break;
+                }
+
+                IEnumerable<int> path = cache.PathNodeIds;
+                if (cache.PathNodeIds[0] == toNode.NodeId)
+                {
+                    path = cache.ReversePathNodeIds();
+                }
+
+                foreach (var nodeID in path)
+                {
+                    var node = GetNodeById(nodeID);
+                    yield return (node.WorldPos, node);
+                }
+
+                yield return (end, null);
+
+                // var path = FindShortestPath(fromNode1, toNode1); // to pro
+                // // if (path.Count <= 0)
+                // // {
+                // //     // 没路
+                // //     yield break;
+                // // }
+                // // Debug.Assert(path.Count > 1);
+                // // bool skip1 = path[1] == fromNode2.NodeId;
+                // // bool skipA2 = path[^2] == toNode2.NodeId;
+                //
+                // int index = 0;
+                // int firstNodeId = 0;
+                // foreach (var node in path)
+                // {
+                //     int i = index++;
+                //     if (i == 0)
+                //     {
+                //         firstNodeId = node;
+                //         continue;
+                //     }
+                //
+                //     if (i == 1)
+                //     {
+                //         if (node != fromNode2.NodeId)
+                //         {
+                //             var first = GetNodeById(firstNodeId);
+                //             yield return (first.WorldPos, first);
+                //         }
+                //     }
+                //
+                //     var curNode = GetNodeById(node);
+                //     yield return (curNode.WorldPos, curNode);
+                //     if (node == toNode2.NodeId) // 倒数第二个是to拐点
+                //     {
+                //         break;
+                //     }
+                // }
+                //
+                // if (index == 0)
                 // {
                 //     // 没路
                 //     yield break;
                 // }
-                // Debug.Assert(path.Count > 1);
-                // bool skip1 = path[1] == fromNode2.NodeId;
-                // bool skipA2 = path[^2] == toNode2.NodeId;
-
-                int index = 0;
-                int firstNodeId = 0;
-                foreach (var node in path)
-                {
-                    int i = index++;
-                    if (i == 0)
-                    {
-                        firstNodeId = node;
-                        continue;
-                    }
-
-                    if (i == 1)
-                    {
-                        if (node != fromNode2.NodeId)
-                        {
-                            var first = GetNodeById(firstNodeId);
-                            yield return (first.WorldPos, first);
-                        }
-                    }
-
-                    var curNode = GetNodeById(node);
-                    yield return (curNode.WorldPos, curNode);
-                    if (node == toNode2.NodeId) // 倒数第二个是to拐点
-                    {
-                        break;
-                    }
-                }
-
-                if (index == 0)
-                {
-                    // 没路
-                    yield break;
-                }
-
-                yield return (end, null);
+                //
+                // yield return (end, null);
             }
 
             /// <summary>
@@ -526,6 +569,34 @@ namespace Ghost.Terrain
                 //     return new[] {startNode.NodeId};
                 // }
 
+                var cache = QueryPathCacheItem(startNode, endNode);
+
+                if (cache.PathNodeIds.Count == 0)
+                {
+                    Debug.Log($"与node {endNode.WorldPos}不连通");
+                    return cache.PathNodeIds;
+                }
+                else if (cache.PathNodeIds[0] == endNode.NodeId)
+                {
+                    return cache.ReversePathNodeIds();
+                }
+                else
+                {
+                    return cache.PathNodeIds;
+                }
+
+
+                //
+                // if (path.Count == 0)
+                // {
+                //     _pathFindCache.Add((startNode.NodeId, endNode.NodeId), new PathCacheItem(path, gCost));
+                // }
+
+                // return _pathFindCache;
+            }
+
+            private PathCacheItem QueryPathCacheItem(WeightedGraphNode startNode, WeightedGraphNode endNode)
+            {
                 var cache = GetPathFindCache(startNode.NodeId, endNode.NodeId);
                 if (cache == null)
                 {
@@ -557,28 +628,7 @@ namespace Ghost.Terrain
                     cache = GetPathFindCache(startNode.NodeId, endNode.NodeId);
                 }
 
-                if (cache.PathNodeIds.Count == 0)
-                {
-                    Debug.Log($"与node {endNode.WorldPos}不连通");
-                    return cache.PathNodeIds;
-                }
-                else if (cache.PathNodeIds[0] == endNode.NodeId)
-                {
-                    return cache.ReversePathNodeIds();
-                }
-                else
-                {
-                    return cache.PathNodeIds;
-                }
-
-
-                //
-                // if (path.Count == 0)
-                // {
-                //     _pathFindCache.Add((startNode.NodeId, endNode.NodeId), new PathCacheItem(path, gCost));
-                // }
-
-                // return _pathFindCache;
+                return cache;
             }
 
             #endregion

@@ -1,4 +1,7 @@
-﻿using KISS;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using KISS;
 using UnityEngine;
 
 namespace Ghost.Terrain
@@ -59,7 +62,9 @@ namespace Ghost.Terrain
 
         // private PathUtils.WeightedGraphNode _edgeFrom;
         // private PathUtils.WeightedGraphNode _edgeTo;
-        private void Start()
+        private List<Vector2> _path = new List<Vector2>();
+
+        private IEnumerator Start()
         {
             var (edgeFrom, edgeTo, pos) =
                 CrossMap.Instance.Graph.GetNearestEdgePos(this.transform.position);
@@ -67,9 +72,94 @@ namespace Ghost.Terrain
             _onGround = new MathTool.Line2D(edgeFrom.WorldPos, edgeTo.WorldPos).Horizontal;
             // _edgeFrom = edgeFrom;
             // _edgeTo = edgeTo;
+            yield return new WaitForSeconds(1f);
+            while (true)
+            {
+                var path = GenPath();
+                _path = path.Select(p => p.Item1).ToList();
+                _pathIndex = 0;
+                yield return new WaitForSeconds(2f);
+            }
         }
 
+        private int _pathIndex = 0;
+
         private void Update()
+        {
+            var forward = 1f * Time.fixedDeltaTime;
+            for (; _pathIndex < _path.Count; _pathIndex++)
+            {
+                var next = _path[_pathIndex];
+                var toNext = next - (Vector2)this.transform.position;
+
+                if (toNext.magnitude < forward)
+                {
+                    this.transform.position = next;
+                    forward -= toNext.magnitude;
+                    continue;
+                }
+
+                var dir = toNext.normalized;
+                _onGround = Mathf.Abs(dir.x) > Mathf.Abs(dir.y);
+                this.transform.position += forward * (Vector3)dir;
+                return;
+            }
+        }
+
+        // private void Update()
+        // {
+        //     var forward = 1f * Time.fixedDeltaTime;
+        //     // var preNode = fromEdgeA;
+        //     foreach (var p in _path)
+        //     {
+        //         var toNext = p - (Vector2)this.transform.position;
+        //         // if (toNext.magnitude < 0.1)
+        //         // {
+        //         //     // if (node != fromEdgeA &&  node != fromEdgeB)
+        //         //     // {
+        //         //     //     preNode = node;
+        //         //     // }
+        //         //     // 已到达node
+        //         //     // this.transform.position = p;
+        //         //     continue;
+        //         // }
+        //
+        //         if (toNext.magnitude < forward)
+        //         {
+        //             this.transform.position = p;
+        //             forward -= toNext.magnitude;
+        //             continue;
+        //         }
+        //
+        //         var dir = toNext.normalized;
+        //         _onGround = Mathf.Abs(dir.x) > Mathf.Abs(dir.y);
+        //         this.transform.position += forward * (Vector3)dir;
+        //         // if (node != _edgeFrom &&  node != _edgeTo)
+        //         // {
+        //         //     if (node == null) // end
+        //         //     {
+        //         //         _edgeFrom = toEdgeA;
+        //         //         _edgeTo = toEdgeB;
+        //         //     }
+        //         //     else if (preNode == _edgeFrom)
+        //         //     {
+        //         //         _edgeTo =  node;
+        //         //     }
+        //         //     else if (preNode == _edgeTo)
+        //         //     {
+        //         //         _edgeFrom = node;
+        //         //     }
+        //         //     else
+        //         //     {
+        //         //         _edgeFrom = preNode;
+        //         //         _edgeTo = node;
+        //         //     }
+        //         // }
+        //         return;
+        //     }
+        // }
+
+        private IEnumerable<(Vector2, PathUtils.WeightedGraphNode)> GenPath()
         {
             var graph = CrossMap.Instance.Graph;
             var from = transform.position;
@@ -87,54 +177,9 @@ namespace Ghost.Terrain
                 (fromEdgeA, fromEdgeB) = curEdge.Value;
             }
 
-            var path = graph.FindShortestPath(from, to, (fromEdgeA, fromEdgeB), alongLine);
-            var forward = 1f * Time.deltaTime;
-            // var preNode = fromEdgeA;
-            foreach (var (p, node) in path)
-            {
-                var toNext = p - (Vector2)this.transform.position;
-                if (toNext.magnitude < 0.1)
-                {
-                    // if (node != fromEdgeA &&  node != fromEdgeB)
-                    // {
-                    //     preNode = node;
-                    // }
-                    // 已到达node
-                    continue;
-                }
-
-                if (toNext.magnitude <= forward)
-                {
-                    this.transform.position = p;
-                    return;
-                }
-
-                var dir = toNext.normalized;
-                _onGround = Mathf.Abs(dir.x) > Mathf.Abs(dir.y);
-                this.transform.position += forward * (Vector3)dir;
-                // if (node != _edgeFrom &&  node != _edgeTo)
-                // {
-                //     if (node == null) // end
-                //     {
-                //         _edgeFrom = toEdgeA;
-                //         _edgeTo = toEdgeB;
-                //     }
-                //     else if (preNode == _edgeFrom)
-                //     {
-                //         _edgeTo =  node;
-                //     }
-                //     else if (preNode == _edgeTo)
-                //     {
-                //         _edgeFrom = node;
-                //     }
-                //     else
-                //     {
-                //         _edgeFrom = preNode;
-                //         _edgeTo = node;
-                //     }
-                // }
-                return;
-            }
+            var edgeEnd = graph.GetEdgeFromeLine(to, alongLine);
+            var path = graph.FindShortestPath(from, to, (fromEdgeA, fromEdgeB), edgeEnd);
+            return path;
         }
     }
 }
