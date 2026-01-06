@@ -13,7 +13,7 @@ namespace Ghost.Terrain
         // [Header("画线结束颜色")] public Color lineColor = Color.red;
         public float lineWidth = 0.1f;
 
-        [Header("忽略roadLine毛刺")] public float burrTrimLen = .5f; //修剪roadLine毛刺
+        // [Header("忽略roadLine毛刺")] public float burrTrimLen = .5f; //修剪roadLine毛刺
 
         protected override void Awake()
         {

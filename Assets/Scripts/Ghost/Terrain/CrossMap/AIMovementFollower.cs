@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Ghost.Edit;
 using KISS;
 using UnityEngine;
 
@@ -10,7 +11,7 @@ namespace Ghost.Terrain
     {
         // private IEnumerator Start()
         // {
-        //     var graph = CrossMap.Instance.Graph;
+        //     var graph = _map.Graph;
         //     while (true)
         //     {
         //         var from = transform.position;
@@ -64,10 +65,13 @@ namespace Ghost.Terrain
         // private PathUtils.WeightedGraphNode _edgeTo;
         private List<Vector2> _path = new List<Vector2>();
 
+        private LevelManager _map;
+
         private IEnumerator Start()
         {
+            _map = MapV2.Instance;
             var (edgeFrom, edgeTo, pos) =
-                CrossMap.Instance.Graph.GetNearestEdgePos(this.transform.position);
+                _map.Graph.GetNearestEdgePos(this.transform.position);
             this.transform.position = pos;
             _onGround = new MathTool.Line2D(edgeFrom.WorldPos, edgeTo.WorldPos).Horizontal;
             // _edgeFrom = edgeFrom;
@@ -161,16 +165,16 @@ namespace Ghost.Terrain
 
         private IEnumerable<(Vector2, PathUtils.WeightedGraphNode)> GenPath()
         {
-            var graph = CrossMap.Instance.Graph;
+            var graph = _map.Graph;
             var from = transform.position;
             var to = Character.Instance.transform.position;
             var alongLine = Character.Instance.Movement.AlongLine;
             // var (toEdgeA, toEdgeB, pos) = graph.GetNearestEdgePos(to);
-            var curEdge = CrossMap.Instance.Graph.GetEdgeByPoint(this.transform.position, _onGround);
+            var curEdge = _map.Graph.GetEdgeByPoint(this.transform.position, _onGround);
             PathUtils.WeightedGraphNode fromEdgeA, fromEdgeB;
             if (curEdge == null)
             {
-                (fromEdgeA, fromEdgeB, _) = CrossMap.Instance.Graph.GetNearestEdgePos(this.transform.position);
+                (fromEdgeA, fromEdgeB, _) = _map.Graph.GetNearestEdgePos(this.transform.position);
             }
             else
             {

@@ -22,7 +22,7 @@ namespace Ghost
             MJoyStick.OnMove -= OnMove;
         }
 
-        private void Update()
+        private void LateUpdate()
         {
             var cPos = transform.position;
             cPos.z = Camera.main.transform.position.z;

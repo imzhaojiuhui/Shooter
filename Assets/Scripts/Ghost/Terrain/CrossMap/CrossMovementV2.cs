@@ -1,4 +1,5 @@
 ﻿using System;
+using Ghost.Edit;
 using UnityEngine;
 
 namespace Ghost.Terrain
@@ -13,23 +14,27 @@ namespace Ghost.Terrain
             get => _alongLine;
         }
 
+        private LevelManager _map;
+
         private void Start()
         {
+            _map = MapV2.Instance;
+
             var (edgeFrom, edgeTo, pos) =
-                CrossMap.Instance.Graph.GetNearestEdgePos(this.transform.position);
+                _map.Graph.GetNearestEdgePos(this.transform.position);
             this.transform.position = pos;
 
             var arrow = edgeTo.WorldPos - edgeFrom.WorldPos;
             _onLadder = Mathf.Abs(arrow.x) < Mathf.Abs(arrow.y);
 
-            _alongLine = CrossMap.Instance.Graph.GetLineSegment(edgeFrom, edgeTo.WorldPos - edgeFrom.WorldPos);
+            _alongLine = _map.Graph.GetLineSegment(edgeFrom, edgeTo.WorldPos - edgeFrom.WorldPos);
         }
 
         private void SwitchOnLadder(bool onLadder, Vector2 conerPos)
         {
             _onLadder = onLadder;
-            var coner = CrossMap.Instance.Graph.GetNearestNode(conerPos);
-            _alongLine = CrossMap.Instance.Graph.GetLineSegment(coner, onLadder ? Vector2.up : Vector2.right);
+            var coner = _map.Graph.GetNearestNode(conerPos);
+            _alongLine = _map.Graph.GetLineSegment(coner, onLadder ? Vector2.up : Vector2.right);
         }
 
         private void Update()
@@ -56,9 +61,9 @@ namespace Ghost.Terrain
 
             var curPos = this.transform.position;
 
-            if (!_onLadder && CrossMap.Instance.EnterClimbRect(transform.position, out Rect climbRect, out var up))
+            if (!_onLadder && _map.OnLadderEnterRect(transform.position, out var enterPos, out var up))
             {
-                var enterPos = climbRect.center;
+                // var enterPos = climbRect.center;
                 var toEnterPos = enterPos - (Vector2)curPos;
                 if (enterPos.x < Mathf.Min(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x))
                 {
@@ -77,7 +82,7 @@ namespace Ghost.Terrain
                 else if (Mathf.Abs(vel.y) < Mathf.Abs(vel.x)) // 左右运动
                 {
                 }
-                else if (((Vector2)curPos - climbRect.center).sqrMagnitude < .1f) // enter point
+                else if (((Vector2)curPos - enterPos).sqrMagnitude < .1f) // enter point
                 {
                     transform.position = enterPos;
                     // _onLadder = true;
@@ -107,7 +112,7 @@ namespace Ghost.Terrain
             }
 
             // todo 优化在enter point时 w a同时按 
-            if (_onLadder && CrossMap.Instance.EnterDownRect(transform.position, out Rect downRect, out var downPos))
+            if (_onLadder && _map.OnLadderLeaveRect(transform.position, out var downPos))
             {
                 var toEnterPos = downPos - (Vector2)curPos;
                 // if (enterPos.x < Mathf.Min(_connectedEdge.Item1.WorldPos.y, _connectedEdge.Item2.WorldPos.y))
