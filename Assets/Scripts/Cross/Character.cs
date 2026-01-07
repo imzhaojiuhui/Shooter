@@ -5,15 +5,15 @@ using UnityEngine;
 namespace Ghost
 {
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(CrossMovementV2))]
+    [RequireComponent(typeof(CharacterGroundMovement))]
     public class Character : MonoSingleton<Character>
     {
-        private CrossMovementV2 _movement;
-        public Movement Movement => _movement;
+        private CharacterGroundMovement _groundMovement;
+        public CharacterGroundMovement GroundMovement => _groundMovement;
 
         private void Start()
         {
-            _movement = GetComponent<CrossMovementV2>();
+            _groundMovement = GetComponent<CharacterGroundMovement>();
             MJoyStick.OnMove += OnMove;
         }
 
@@ -31,7 +31,7 @@ namespace Ghost
 
         private void OnMove(Vector2 dir)
         {
-            _movement.InputVelocity = dir;
+            _groundMovement.InputVelocity = dir;
         }
     }
 }

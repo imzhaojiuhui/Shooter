@@ -7,8 +7,11 @@ using UnityEngine;
 
 namespace Ghost.Terrain
 {
-    public class AIMovementFollower : MonoBehaviour
+    public class AIMovementFollower : MonoBehaviour, GroundMovement
     {
+        public float baseSpeed = 1f;
+
+        public float Speed => baseSpeed;
         // private IEnumerator Start()
         // {
         //     var graph = _map.Graph;
@@ -90,7 +93,7 @@ namespace Ghost.Terrain
 
         private void Update()
         {
-            var forward = 1f * Time.fixedDeltaTime;
+            var forward = Speed * Time.deltaTime;
             for (; _pathIndex < _path.Count; _pathIndex++)
             {
                 var next = _path[_pathIndex];
@@ -163,15 +166,15 @@ namespace Ghost.Terrain
         //     }
         // }
 
-        private IEnumerable<(Vector2, PathUtils.WeightedGraphNode)> GenPath()
+        private IEnumerable<(Vector2, WeightedGraphNode)> GenPath()
         {
             var graph = _map.Graph;
             var from = transform.position;
-            var to = Character.Instance.transform.position;
-            var alongLine = Character.Instance.Movement.AlongLine;
+            // var to = Character.Instance.transform.position;
+            var (to, toEdgeA, toEdgeB) = Character.Instance.GroundMovement.QueryPosAndEdge(graph);
             // var (toEdgeA, toEdgeB, pos) = graph.GetNearestEdgePos(to);
             var curEdge = _map.Graph.GetEdgeByPoint(this.transform.position, _onGround);
-            PathUtils.WeightedGraphNode fromEdgeA, fromEdgeB;
+            WeightedGraphNode fromEdgeA, fromEdgeB;
             if (curEdge == null)
             {
                 (fromEdgeA, fromEdgeB, _) = _map.Graph.GetNearestEdgePos(this.transform.position);
@@ -181,8 +184,9 @@ namespace Ghost.Terrain
                 (fromEdgeA, fromEdgeB) = curEdge.Value;
             }
 
-            var edgeEnd = graph.GetEdgeFromeLine(to, alongLine);
-            var path = graph.FindShortestPath(from, to, (fromEdgeA, fromEdgeB), edgeEnd);
+
+            var path = graph.FindShortestPath(from, to,
+                (fromEdgeA, fromEdgeB), (toEdgeA, toEdgeB));
             return path;
         }
     }

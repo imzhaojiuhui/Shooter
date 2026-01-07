@@ -6,7 +6,7 @@ namespace Ghost.Edit
 {
     public interface LevelManager
     {
-        public PathUtils.WeightedUndirectedGraph Graph { get; }
+        public WeightedUndirectedGraph Graph { get; }
 
         /// <summary>
         /// 

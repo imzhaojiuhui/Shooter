@@ -25,7 +25,7 @@ namespace Ghost.Terrain
             //     DrawNewLine(line.start, line.end);
             // }
 
-            PathUtils.WeightedUndirectedGraph graph = new();
+            WeightedUndirectedGraph graph = new();
 
             for (int i = 0; i < lines.Count; i++)
             {
@@ -70,7 +70,7 @@ namespace Ghost.Terrain
                     }
                 }
 
-                PathUtils.WeightedGraphNode preNode = null;
+                WeightedGraphNode preNode = null;
                 // List<PathUtils.WeightedGraphNode> nodesOnLine = new();
                 foreach (var p in nodesPosOnLine.OrderBy(n => Vector2.Distance(lineA.start, n)))
                 {
@@ -95,7 +95,7 @@ namespace Ghost.Terrain
             // allNodes = MathUtils.RemoveRepeatPoints(allNodes, 1f);
         }
 
-        public PathUtils.WeightedUndirectedGraph Graph { get; private set; }
+        public WeightedUndirectedGraph Graph { get; private set; }
 
         private readonly List<(Rect, bool)> _climbRects = new(); // rect, up
         private readonly List<(Rect, Vector2)> _downRects = new(); // rect, point

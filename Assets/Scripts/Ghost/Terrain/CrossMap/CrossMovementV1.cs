@@ -20,7 +20,7 @@ namespace Ghost.Terrain
         private float _turnSeconds;
 
         // private bool _preFrameMoveHorizontal = true; // 当前是水平移动还是竖直移动
-        private (PathUtils.WeightedGraphNode, PathUtils.WeightedGraphNode) _alongEdge;
+        private (WeightedGraphNode, WeightedGraphNode) _alongEdge;
 
         private Transform _edgeNodeA;
         private Transform _edgeNodeB;

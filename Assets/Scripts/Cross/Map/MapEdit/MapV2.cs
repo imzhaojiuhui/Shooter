@@ -23,7 +23,7 @@ namespace Ghost.Edit
             var floors = GetComponentsInChildren<EditFloor>();
             var ladders = GetComponentsInChildren<EditLadder>();
 
-            PathUtils.WeightedUndirectedGraph graph = new();
+            WeightedUndirectedGraph graph = new();
             foreach (var floor in floors)
             {
                 var nodesOnFloor = new List<(Vector2, NodeType)>();
@@ -44,7 +44,7 @@ namespace Ghost.Edit
                         NodeType.Normal));
                 }
 
-                PathUtils.WeightedGraphNode preNode = null;
+                WeightedGraphNode preNode = null;
                 var nodesL2R = nodesOnFloor.OrderBy(n => Vector2.Distance(floor.Start, n.Item1));
                 foreach (var (pos, type) in nodesL2R)
                 {
@@ -98,7 +98,7 @@ namespace Ghost.Edit
         private readonly List<(Rect, Vector2, bool)> _enterLadderRects = new(); // rect, up
         private readonly List<(Rect, Vector2)> _leaveLadderRects = new(); // rect, point
 
-        public PathUtils.WeightedUndirectedGraph Graph { get; private set; }
+        public WeightedUndirectedGraph Graph { get; private set; }
 
         public IEnumerable<(Vector2, bool)> OnLadderEnterRect(Vector2 pos)
         {

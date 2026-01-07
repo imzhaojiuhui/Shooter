@@ -1,15 +1,25 @@
 ﻿using System;
 using Ghost.Edit;
+using SAW;
 using UnityEngine;
 
 namespace Ghost.Terrain
 {
-    public class CrossMovementV2 : Movement
+    [DisallowMultipleComponent]
+    public class CharacterGroundMovement : MonoBehaviour, GroundMovement, PosInGraph
     {
-        private bool _onLadder = false;
-        private (PathUtils.WeightedGraphNode, PathUtils.WeightedGraphNode) _alongLine;
+        public float baseSpeed = 3;
+        public Vector2 InputVelocity { get; set; }
 
-        public override (PathUtils.WeightedGraphNode, PathUtils.WeightedGraphNode) AlongLine
+        public float Speed
+        {
+            get { return baseSpeed; }
+        }
+
+        private bool _onLadder = false;
+        private (WeightedGraphNode, WeightedGraphNode) _alongLine;
+
+        public (WeightedGraphNode, WeightedGraphNode) AlongLine
         {
             get => _alongLine;
         }
@@ -193,6 +203,21 @@ namespace Ghost.Terrain
             transform.position = toPos;
 
             #endregion
+        }
+
+        public (Vector2, WeightedGraphNode, WeightedGraphNode) QueryPosAndEdge(WeightedUndirectedGraph graph)
+        {
+            if (graph == _map.Graph)
+            {
+                var (edgeFrom, edgeTo) = graph.GetEdgeFromeLine(transform.position, _alongLine);
+                return (transform.position, edgeFrom, edgeTo);
+            }
+            else
+            {
+                var (edgeFrom, edgeTo, pos) =
+                    _map.Graph.GetNearestEdgePos(this.transform.position);
+                return (pos, edgeFrom, edgeTo);
+            }
         }
     }
 }
