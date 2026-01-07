@@ -93,6 +93,11 @@ namespace Ghost.Terrain
 
         private void Update()
         {
+            if (_path.Count <= 0)
+            {
+                return;
+            }
+
             var forward = Speed * Time.deltaTime;
             for (; _pathIndex < _path.Count; _pathIndex++)
             {

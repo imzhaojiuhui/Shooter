@@ -94,7 +94,7 @@ namespace KISS
         /// <returns></returns>
         public static bool IsCollinearIntersect(Line2D line1, Line2D line2)
         {
-            if (Cross(line1.end - line1.start, line2.end - line2.start) > 1e-6)
+            if (Mathf.Abs(Cross(line1.end - line1.start, line2.end - line2.start)) > 1e-6)
             {
                 return false;
             }
