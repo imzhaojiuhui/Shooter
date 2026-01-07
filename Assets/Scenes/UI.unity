@@ -331,6 +331,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4aee0b96d154ef08693b934ea0f95cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ghost.Terrain.AIMovementFollower
+  baseSpeed: 1
 --- !u!212 &329108903
 SpriteRenderer:
   serializedVersion: 2
@@ -399,7 +400,7 @@ Transform:
   m_GameObject: {fileID: 329108901}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.21, y: -4, z: 0}
+  m_LocalPosition: {x: 6.71, y: -3.9, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1301,6 +1302,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 391725522957425805, guid: 5ff3cfc39b7e92c4d836d6a1c0f4be25, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.52
+      objectReference: {fileID: 0}
+    - target: {fileID: 391725522957425805, guid: 5ff3cfc39b7e92c4d836d6a1c0f4be25, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1.9
+      objectReference: {fileID: 0}
     - target: {fileID: 2713036208483267244, guid: 5ff3cfc39b7e92c4d836d6a1c0f4be25, type: 3}
       propertyPath: m_Name
       value: Level

@@ -68,7 +68,7 @@ namespace Ghost.Terrain
         // private PathUtils.WeightedGraphNode _edgeTo;
         private List<Vector2> _path = new List<Vector2>();
 
-        private LevelManager _map;
+        private IMap _map;
 
         private IEnumerator Start()
         {
@@ -85,7 +85,7 @@ namespace Ghost.Terrain
                 var path = GenPath();
                 _path = path.Select(p => p.Item1).ToList();
                 _pathIndex = 0;
-                yield return new WaitForSeconds(2f);
+                yield return new WaitForSeconds(.2f);
             }
         }
 

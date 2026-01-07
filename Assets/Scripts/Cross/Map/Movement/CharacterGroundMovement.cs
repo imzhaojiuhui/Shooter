@@ -24,7 +24,7 @@ namespace Ghost.Terrain
             get => _alongLine;
         }
 
-        private LevelManager _map;
+        private IMap _map;
 
         private void Start()
         {
@@ -38,6 +38,12 @@ namespace Ghost.Terrain
             _onLadder = Mathf.Abs(arrow.x) < Mathf.Abs(arrow.y);
 
             _alongLine = _map.Graph.GetLineSegment(edgeFrom, edgeTo.WorldPos - edgeFrom.WorldPos);
+            _map.AfterGraphChanged += AfterGraphChanged;
+        }
+
+        private void OnDestroy()
+        {
+            _map.AfterGraphChanged -= AfterGraphChanged;
         }
 
         private void SwitchOnLadder(bool onLadder, Vector2 conerPos)
@@ -47,6 +53,11 @@ namespace Ghost.Terrain
             _alongLine = _map.Graph.GetLineSegment(coner, onLadder ? Vector2.up : Vector2.right);
         }
 
+        private void AfterGraphChanged()
+        {
+            _alongLine = _map.Graph.GetLineSegment(_alongLine.Item1, _onLadder ? Vector2.up : Vector2.right);
+        }
+
         private void Update()
         {
             var vel = InputVelocity;
@@ -54,6 +65,12 @@ namespace Ghost.Terrain
             if (vel.magnitude < .1)
             {
                 return;
+            }
+
+            // 楼梯拐角处键位冲突 优先左右
+            if (Mathf.Abs(vel.x) == Mathf.Abs(vel.y))
+            {
+                vel.x *= 1.000001f;
             }
 
 
@@ -75,15 +92,22 @@ namespace Ghost.Terrain
             {
                 foreach (var (enterPos, up) in _map.OnLadderEnterRect(transform.position))
                 {
-                    // var enterPos = climbRect.center;
-                    var toEnterPos = enterPos - (Vector2)curPos;
+                    #region 有障碍物过不去
+
                     if (enterPos.x < Mathf.Min(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x))
                     {
+                        continue;
                     }
 
                     if (enterPos.x > Mathf.Max(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x))
                     {
+                        continue;
                     }
+
+                    #endregion
+
+                    // var enterPos = climbRect.center;
+                    var toEnterPos = enterPos - (Vector2)curPos;
 
                     if (up && vel.y < float.Epsilon) // 楼梯在上却按下
                     {
@@ -127,26 +151,33 @@ namespace Ghost.Terrain
             // todo 优化在enter point时 w a同时按 
             if (_onLadder)
             {
-                foreach (var downPos in _map.OnLadderLeaveRect(transform.position))
+                foreach (var leavePos in _map.OnLadderLeaveRect(transform.position))
                 {
                     {
-                        var toEnterPos = downPos - (Vector2)curPos;
-                        // if (enterPos.x < Mathf.Min(_connectedEdge.Item1.WorldPos.y, _connectedEdge.Item2.WorldPos.y))
-                        // {
-                        //     
-                        // }
-                        // if (enterPos.x > Mathf.Max(_connectedEdge.Item1.WorldPos.y, _connectedEdge.Item2.WorldPos.y))
-                        // {
-                        //     
-                        // }
+                        #region 有障碍物过不去
+
+                        if (leavePos.y < Mathf.Min(_alongLine.Item1.WorldPos.y, _alongLine.Item2.WorldPos.y))
+                        {
+                            continue;
+                        }
+
+                        if (leavePos.y > Mathf.Max(_alongLine.Item1.WorldPos.y, _alongLine.Item2.WorldPos.y))
+                        {
+                            continue;
+                        }
+
+                        #endregion
+
+                        var toEnterPos = leavePos - (Vector2)curPos;
+
                         if (Mathf.Abs(vel.y) > Mathf.Abs(vel.x)) // 上下
                         {
                         }
-                        else if (((Vector2)curPos - downPos).sqrMagnitude < .1f) // enter point
+                        else if (((Vector2)curPos - leavePos).sqrMagnitude < .1f) // enter point
                         {
-                            transform.position = downPos;
+                            transform.position = leavePos;
                             // _onLadder = false;
-                            SwitchOnLadder(false, downPos);
+                            SwitchOnLadder(false, leavePos);
                             return;
                         }
                         else if (Vector2.Dot(toEnterPos, vel) < 0) // 和enter pos不是一个方向
@@ -162,9 +193,9 @@ namespace Ghost.Terrain
                             }
                             else
                             {
-                                this.transform.position = downPos;
+                                this.transform.position = leavePos;
                                 // _onLadder = false;
-                                SwitchOnLadder(false, downPos);
+                                SwitchOnLadder(false, leavePos);
                             }
 
                             return;

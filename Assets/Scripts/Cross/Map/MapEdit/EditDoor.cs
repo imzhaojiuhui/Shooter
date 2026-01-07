@@ -17,5 +17,14 @@ namespace Ghost.Edit
         }
 
         public Vector2 DoorPos => new Vector2(transform.position.x, transform.parent.position.y);
+
+        public int doorId;
+
+        [ContextMenu("解锁")]
+        void UnlockDoor()
+        {
+            MapV2.Instance.UnlockDoor(doorId);
+            gizmoColor = Color.red;
+        }
     }
 }

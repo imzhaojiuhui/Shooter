@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Ghost.Terrain;
 using UnityEngine;
 
 namespace Ghost.Edit
 {
-    public interface LevelManager
+    public interface IMap
     {
         public WeightedUndirectedGraph Graph { get; }
 
@@ -18,5 +19,9 @@ namespace Ghost.Edit
         public IEnumerable<(Vector2, bool)> OnLadderEnterRect(Vector2 pos);
 
         public IEnumerable<Vector2> OnLadderLeaveRect(Vector2 pos);
+
+        public void UnlockDoor(int doorId);
+
+        public event Action AfterGraphChanged;
     }
 }

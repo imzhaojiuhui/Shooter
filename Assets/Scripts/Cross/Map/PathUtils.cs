@@ -114,6 +114,13 @@ namespace Ghost.Terrain
             nodeB.AddAdjacentEdge(nodeA.NodeId, weight);
         }
 
+        public void EnsureEdge(WeightedGraphNode nodeA, WeightedGraphNode nodeB)
+        {
+            if (nodeA.AdjacentEdges.Any(e => e.targetNodeId == nodeB.NodeId)) return;
+
+            AddEdge(nodeA, nodeB);
+        }
+
         public void AddEdge(WeightedGraphNode nodeA, WeightedGraphNode nodeB)
         {
             AddWeightedEdge(nodeA, nodeB, Vector2.Distance(nodeA.WorldPos, nodeB.WorldPos));

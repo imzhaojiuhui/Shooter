@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Ghost.Terrain;
 using KISS;
@@ -7,16 +8,16 @@ using UnityEngine;
 namespace Ghost.Edit
 {
     [DisallowMultipleComponent]
-    public class MapV2 : MonoSingleton<MapV2>, LevelManager
+    public class MapV2 : MonoSingleton<MapV2>, IMap
     {
         public float doorWidth = .2f;
         public float nodeEpsilon = 1e-6f;
 
-        private enum NodeType
-        {
-            Normal,
-            Obstacle,
-        }
+        // private enum NodeType
+        // {
+        //     Normal,
+        //     Door,
+        // }
 
         private void Awake()
         {
@@ -26,14 +27,14 @@ namespace Ghost.Edit
             WeightedUndirectedGraph graph = new();
             foreach (var floor in floors)
             {
-                var nodesOnFloor = new List<(Vector2, NodeType)>();
-                nodesOnFloor.Add((floor.Start, NodeType.Normal));
-                nodesOnFloor.Add((floor.End, NodeType.Normal));
+                var nodesOnFloor = new List<(Vector2, EditDoor)>();
+                nodesOnFloor.Add((floor.Start, null));
+                nodesOnFloor.Add((floor.End, null));
 
                 var doors = floor.GetComponentsInChildren<EditDoor>();
                 foreach (var door in doors)
                 {
-                    nodesOnFloor.Add((door.DoorPos, NodeType.Obstacle));
+                    nodesOnFloor.Add((door.DoorPos, door));
                 }
 
                 var adjLadders = ladders.Where(l => l.floorA == floor.transform || l.floorB == floor.transform)
@@ -41,17 +42,22 @@ namespace Ghost.Edit
                 foreach (var adjLadder in adjLadders)
                 {
                     nodesOnFloor.Add((new Vector2(adjLadder.transform.position.x, floor.transform.position.y),
-                        NodeType.Normal));
+                        null));
                 }
 
                 WeightedGraphNode preNode = null;
                 var nodesL2R = nodesOnFloor.OrderBy(n => Vector2.Distance(floor.Start, n.Item1));
-                foreach (var (pos, type) in nodesL2R)
+                foreach (var (pos, door) in nodesL2R)
                 {
-                    if (type == NodeType.Obstacle)
+                    if (door != null)
                     {
                         var nodeL = graph.EnsureNode(pos + Vector2.left * doorWidth / 2, nodeEpsilon);
                         var nodeR = graph.EnsureNode(pos + Vector2.right * doorWidth / 2, nodeEpsilon);
+
+                        var doorId = _doorIdCnt++;
+                        _doorNodeLR[doorId] = (nodeL, nodeR);
+                        door.doorId = doorId;
+
                         if (preNode != null)
                         {
                             graph.AddEdge(preNode, nodeL);
@@ -97,6 +103,8 @@ namespace Ghost.Edit
 
         private readonly List<(Rect, Vector2, bool)> _enterLadderRects = new(); // rect, up
         private readonly List<(Rect, Vector2)> _leaveLadderRects = new(); // rect, point
+        private int _doorIdCnt;
+        private Dictionary<int, (WeightedGraphNode, WeightedGraphNode)> _doorNodeLR = new();
 
         public WeightedUndirectedGraph Graph { get; private set; }
 
@@ -124,6 +132,26 @@ namespace Ghost.Edit
             }
 
             yield break;
+        }
+
+        public void UnlockDoor(int doorId)
+        {
+            var (l, r) = _doorNodeLR[doorId];
+            Graph.EnsureEdge(l, r);
+            _graphChanged = true;
+        }
+
+        public event Action AfterGraphChanged;
+
+        private bool _graphChanged;
+
+        private void LateUpdate()
+        {
+            if (_graphChanged)
+            {
+                AfterGraphChanged?.Invoke();
+                _graphChanged = false;
+            }
         }
     }
 }
