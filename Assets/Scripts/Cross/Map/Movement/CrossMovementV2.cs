@@ -41,7 +41,7 @@ namespace Ghost.Terrain
         {
             var vel = InputVelocity;
 
-            if (vel == Vector2.zero)
+            if (vel.magnitude < .1)
             {
                 return;
             }
@@ -61,101 +61,109 @@ namespace Ghost.Terrain
 
             var curPos = this.transform.position;
 
-            if (!_onLadder && _map.OnLadderEnterRect(transform.position, out var enterPos, out var up))
+            if (!_onLadder)
             {
-                // var enterPos = climbRect.center;
-                var toEnterPos = enterPos - (Vector2)curPos;
-                if (enterPos.x < Mathf.Min(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x))
+                foreach (var (enterPos, up) in _map.OnLadderEnterRect(transform.position))
                 {
-                }
-
-                if (enterPos.x > Mathf.Max(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x))
-                {
-                }
-
-                if (up && vel.y < float.Epsilon) // 楼梯在上却按下
-                {
-                }
-                else if (!up && vel.y > -float.Epsilon) // 楼梯在下 按上
-                {
-                }
-                else if (Mathf.Abs(vel.y) < Mathf.Abs(vel.x)) // 左右运动
-                {
-                }
-                else if (((Vector2)curPos - enterPos).sqrMagnitude < .1f) // enter point
-                {
-                    transform.position = enterPos;
-                    // _onLadder = true;
-                    SwitchOnLadder(true, enterPos);
-                    return;
-                }
-                else if (Vector2.Dot(toEnterPos, vel) < 0) // 和楼梯不是一个方向
-                {
-                }
-                else // -> enter point
-                {
-                    var dis = Speed * Time.deltaTime;
-                    if (dis < toEnterPos.magnitude)
+                    // var enterPos = climbRect.center;
+                    var toEnterPos = enterPos - (Vector2)curPos;
+                    if (enterPos.x < Mathf.Min(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x))
                     {
-                        var dir = toEnterPos.normalized;
-                        transform.position += (Vector3)dir * dis;
                     }
-                    else
+
+                    if (enterPos.x > Mathf.Max(_alongLine.Item1.WorldPos.x, _alongLine.Item2.WorldPos.x))
                     {
-                        this.transform.position = enterPos;
+                    }
+
+                    if (up && vel.y < float.Epsilon) // 楼梯在上却按下
+                    {
+                    }
+                    else if (!up && vel.y > -float.Epsilon) // 楼梯在下 按上
+                    {
+                    }
+                    else if (Mathf.Abs(vel.y) < Mathf.Abs(vel.x)) // 左右运动
+                    {
+                    }
+                    else if (((Vector2)curPos - enterPos).sqrMagnitude < .1f) // enter point
+                    {
+                        transform.position = enterPos;
                         // _onLadder = true;
                         SwitchOnLadder(true, enterPos);
+                        return;
                     }
+                    else if (Vector2.Dot(toEnterPos, vel) < 0) // 和楼梯不是一个方向
+                    {
+                    }
+                    else // -> enter point
+                    {
+                        var dis = Speed * Time.deltaTime;
+                        if (dis < toEnterPos.magnitude)
+                        {
+                            var dir = toEnterPos.normalized;
+                            transform.position += (Vector3)dir * dis;
+                        }
+                        else
+                        {
+                            this.transform.position = enterPos;
+                            // _onLadder = true;
+                            SwitchOnLadder(true, enterPos);
+                        }
 
-                    return;
+                        return;
+                    }
                 }
             }
 
             // todo 优化在enter point时 w a同时按 
-            if (_onLadder && _map.OnLadderLeaveRect(transform.position, out var downPos))
+            if (_onLadder)
             {
-                var toEnterPos = downPos - (Vector2)curPos;
-                // if (enterPos.x < Mathf.Min(_connectedEdge.Item1.WorldPos.y, _connectedEdge.Item2.WorldPos.y))
-                // {
-                //     
-                // }
-                // if (enterPos.x > Mathf.Max(_connectedEdge.Item1.WorldPos.y, _connectedEdge.Item2.WorldPos.y))
-                // {
-                //     
-                // }
-                if (Mathf.Abs(vel.y) > Mathf.Abs(vel.x)) // 上下
+                foreach (var downPos in _map.OnLadderLeaveRect(transform.position))
                 {
-                }
-                else if (((Vector2)curPos - downPos).sqrMagnitude < .1f) // enter point
-                {
-                    transform.position = downPos;
-                    // _onLadder = false;
-                    SwitchOnLadder(false, downPos);
-                    return;
-                }
-                else if (Vector2.Dot(toEnterPos, vel) < 0) // 和enter pos不是一个方向
-                {
-                }
-                else
-                {
-                    var dis = Speed * Time.deltaTime;
-                    if (dis < toEnterPos.magnitude)
                     {
-                        var dir = toEnterPos.normalized;
-                        transform.position += (Vector3)dir * dis;
-                    }
-                    else
-                    {
-                        this.transform.position = downPos;
-                        // _onLadder = false;
-                        SwitchOnLadder(false, downPos);
-                    }
+                        var toEnterPos = downPos - (Vector2)curPos;
+                        // if (enterPos.x < Mathf.Min(_connectedEdge.Item1.WorldPos.y, _connectedEdge.Item2.WorldPos.y))
+                        // {
+                        //     
+                        // }
+                        // if (enterPos.x > Mathf.Max(_connectedEdge.Item1.WorldPos.y, _connectedEdge.Item2.WorldPos.y))
+                        // {
+                        //     
+                        // }
+                        if (Mathf.Abs(vel.y) > Mathf.Abs(vel.x)) // 上下
+                        {
+                        }
+                        else if (((Vector2)curPos - downPos).sqrMagnitude < .1f) // enter point
+                        {
+                            transform.position = downPos;
+                            // _onLadder = false;
+                            SwitchOnLadder(false, downPos);
+                            return;
+                        }
+                        else if (Vector2.Dot(toEnterPos, vel) < 0) // 和enter pos不是一个方向
+                        {
+                        }
+                        else
+                        {
+                            var dis = Speed * Time.deltaTime;
+                            if (dis < toEnterPos.magnitude)
+                            {
+                                var dir = toEnterPos.normalized;
+                                transform.position += (Vector3)dir * dis;
+                            }
+                            else
+                            {
+                                this.transform.position = downPos;
+                                // _onLadder = false;
+                                SwitchOnLadder(false, downPos);
+                            }
 
-                    return;
+                            return;
+                        }
+                    }
                 }
             }
 
-            var forward = Vector2.zero;
+            Vector2 forward;
             if (_onLadder)
             {
                 forward = Speed * Time.deltaTime * Math.Sign(vel.y) * Vector2.up;

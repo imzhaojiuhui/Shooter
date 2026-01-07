@@ -146,6 +146,23 @@ namespace Ghost.Terrain
             }
 
             /// <summary>
+            /// get or add node
+            /// </summary>
+            /// <param name="nodeWorldPos"></param>
+            /// <param name="posEpsilon"></param>
+            /// <returns></returns>
+            public WeightedGraphNode EnsureNode(Vector2 nodeWorldPos, float posEpsilon)
+            {
+                var node = GetNearestNodeWithIn(nodeWorldPos, posEpsilon);
+                if (node == null)
+                {
+                    node = AddNode(nodeWorldPos);
+                }
+
+                return node;
+            }
+
+            /// <summary>
             /// 1. 添加节点到图中，自动分配唯一ID，返回创建的节点
             /// </summary>
             public WeightedGraphNode AddNode(Vector2 nodeWorldPos)
@@ -244,7 +261,7 @@ namespace Ghost.Terrain
                 {
                     var target = GetNodeById(edge.targetNodeId);
                     var dir = target.WorldPos - curNode.WorldPos;
-                    if (MathTool.IsAngleWithin45(dir, direction))
+                    if (MathTool.IsAngleWithinDeg(dir, direction, 1))
                     {
                         return target;
                     }
@@ -364,7 +381,7 @@ namespace Ghost.Terrain
                         continue;
                     }
 
-                    if (MathTool.IsPointOnLine(point, line, .1f))
+                    if (MathTool.IsPointOnLine(point, line, .00001f))
                     {
                         return (a, b);
                     }

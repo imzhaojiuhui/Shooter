@@ -9,6 +9,9 @@ namespace Ghost.Edit
     [DisallowMultipleComponent]
     public class MapV2 : MonoSingleton<MapV2>, LevelManager
     {
+        public float doorWidth = .2f;
+        public float nodeEpsilon = 1e-6f;
+
         private enum NodeType
         {
             Normal,
@@ -47,8 +50,8 @@ namespace Ghost.Edit
                 {
                     if (type == NodeType.Obstacle)
                     {
-                        var nodeL = graph.AddNode(pos + Vector2.left * .01f);
-                        var nodeR = graph.AddNode(pos + Vector2.right * .01f);
+                        var nodeL = graph.EnsureNode(pos + Vector2.left * doorWidth / 2, nodeEpsilon);
+                        var nodeR = graph.EnsureNode(pos + Vector2.right * doorWidth / 2, nodeEpsilon);
                         if (preNode != null)
                         {
                             graph.AddEdge(preNode, nodeL);
@@ -58,7 +61,7 @@ namespace Ghost.Edit
                         continue;
                     }
 
-                    var node = graph.AddNode(pos);
+                    var node = graph.EnsureNode(pos, nodeEpsilon);
                     if (preNode != null)
                     {
                         graph.AddEdge(preNode, node);
@@ -70,10 +73,10 @@ namespace Ghost.Edit
 
             foreach (var ladder in ladders)
             {
-                var nodeA = graph.GetNearestNodeWithIn(ladder.PosHigh, .0001f);
-                var nodeB = graph.GetNearestNodeWithIn(ladder.PosLow, .0001f);
-                nodeA ??= graph.AddNode(ladder.PosHigh);
-                nodeB ??= graph.AddNode(ladder.PosLow);
+                var nodeA = graph.EnsureNode(ladder.PosHigh, nodeEpsilon);
+                var nodeB = graph.EnsureNode(ladder.PosLow, nodeEpsilon);
+                // nodeA ??= graph.AddNode(ladder.PosHigh);
+                // nodeB ??= graph.AddNode(ladder.PosLow);
 
                 graph.AddEdge(nodeA, nodeB);
             }
@@ -97,36 +100,30 @@ namespace Ghost.Edit
 
         public PathUtils.WeightedUndirectedGraph Graph { get; private set; }
 
-        public bool OnLadderEnterRect(Vector2 pos, out Vector2 enterPos, out bool isUp)
+        public IEnumerable<(Vector2, bool)> OnLadderEnterRect(Vector2 pos)
         {
-            foreach (var (rect, enterPos_, up) in _enterLadderRects)
+            foreach (var (rect, enterPos, up) in _enterLadderRects)
             {
                 if (rect.Contains(pos))
                 {
-                    enterPos = enterPos_;
-                    isUp = up;
-                    return true;
+                    yield return (enterPos, up);
                 }
             }
 
-            enterPos = Vector2.zero;
-            isUp = false;
-            return false;
+            yield break;
         }
 
-        public bool OnLadderLeaveRect(Vector2 pos, out Vector2 leavePos)
+        public IEnumerable<Vector2> OnLadderLeaveRect(Vector2 pos)
         {
-            foreach (var (rect, leavePos_) in _leaveLadderRects)
+            foreach (var (rect, leavePos) in _leaveLadderRects)
             {
                 if (rect.Contains(pos))
                 {
-                    leavePos = leavePos_;
-                    return true;
+                    yield return leavePos;
                 }
             }
 
-            leavePos = Vector2.zero;
-            return false;
+            yield break;
         }
     }
 }

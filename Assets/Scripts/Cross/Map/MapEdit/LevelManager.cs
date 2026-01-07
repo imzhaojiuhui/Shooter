@@ -1,4 +1,5 @@
-﻿using Ghost.Terrain;
+﻿using System.Collections.Generic;
+using Ghost.Terrain;
 using UnityEngine;
 
 namespace Ghost.Edit
@@ -7,8 +8,15 @@ namespace Ghost.Edit
     {
         public PathUtils.WeightedUndirectedGraph Graph { get; }
 
-        public bool OnLadderEnterRect(Vector2 pos, out Vector2 enterPos, out bool isUp);
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="pos"></param>
+        /// <param name="enterPos"></param>
+        /// <param name="isUp"></param>
+        /// <returns>(enterPos, isUp)</returns>
+        public IEnumerable<(Vector2, bool)> OnLadderEnterRect(Vector2 pos);
 
-        public bool OnLadderLeaveRect(Vector2 pos, out Vector2 downPos);
+        public IEnumerable<Vector2> OnLadderLeaveRect(Vector2 pos);
     }
 }
