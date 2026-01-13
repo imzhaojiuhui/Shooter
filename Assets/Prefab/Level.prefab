@@ -49,6 +49,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2f49cb67faa4d849c8f0f4ae445d376, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ghost.Edit.MapV2
+  doorWidth: 0.2
+  nodeEpsilon: 0.000001
 --- !u!1 &2837548557142784548
 GameObject:
   m_ObjectHideFlags: 0
@@ -390,11 +392,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 225132434679533967, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 7.73
+      value: 7.723
       objectReference: {fileID: 0}
     - target: {fileID: 225132434679533967, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.1
+      value: 0.119
       objectReference: {fileID: 0}
     - target: {fileID: 1518111197543386319, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
       propertyPath: m_LocalPosition.x
@@ -462,6 +464,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8879982926966971831}
     m_Modifications:
+    - target: {fileID: 225132434679533967, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 1.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 225132434679533967, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.18
+      objectReference: {fileID: 0}
     - target: {fileID: 1518111197543386319, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
       propertyPath: m_LocalPosition.x
       value: -6.19
@@ -504,7 +514,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5598899936727561411, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
       propertyPath: length
-      value: 17.6
+      value: 19.8
       objectReference: {fileID: 0}
     - target: {fileID: 6524173611388827124, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
       propertyPath: m_Name
@@ -605,11 +615,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 225132434679533967, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 7.73
+      value: 7.815
       objectReference: {fileID: 0}
     - target: {fileID: 225132434679533967, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.1
+      value: 0.159
       objectReference: {fileID: 0}
     - target: {fileID: 1518111197543386319, guid: 55c394e6c31eb6e4bbea997145980a5d, type: 3}
       propertyPath: m_LocalPosition.x
